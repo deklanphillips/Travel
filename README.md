@@ -28,38 +28,27 @@ sample data — no API key needed.
 
 ## Switching to real flight data
 
-Copy the example env file and choose a provider:
+Copy the example env file and add a Duffel token:
 
 ```bash
 cp .env.example .env.local
 ```
-
-### Option A — Amadeus (recommended, free instant key)
-
-```env
-FLIGHT_PROVIDER=amadeus
-AMADEUS_CLIENT_ID=your_key
-AMADEUS_CLIENT_SECRET=your_secret
-AMADEUS_ENV=test
-```
-
-1. Sign up at [developers.amadeus.com](https://developers.amadeus.com).
-2. Create an app → copy the **API Key** and **API Secret**.
-3. The **test** environment returns real cached fares for most routes, free.
-   Switch `AMADEUS_ENV=production` once you create a production app.
-
-### Option B — Duffel
 
 ```env
 FLIGHT_PROVIDER=duffel
 DUFFEL_API_TOKEN=duffel_test_xxxxxxxx
 ```
 
-Get a token at [app.duffel.com](https://app.duffel.com).
+1. Sign up at [app.duffel.com](https://app.duffel.com) (free).
+2. Copy a **test** access token (starts `duffel_test_`).
+3. Restart `npm run dev` — searches now return real cash fares.
+
+> **Note:** Amadeus's Self-Service API was previously considered here but is
+> being decommissioned (portal shutdown July 17, 2026), so it is not used.
 
 ### About award (miles) data
 
-Both APIs return live **cash** fares only. Loyalty **award/miles** availability
+Duffel returns live **cash** fares only. Loyalty **award/miles** availability
 isn't offered by any public API — it's what seats.aero scrapes from each
 program — so real-data results show cash prices and leave the miles field empty
 until a dedicated award source is added. With `FLIGHT_PROVIDER=mock` you still
