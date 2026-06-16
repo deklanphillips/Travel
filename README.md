@@ -52,15 +52,27 @@ src/
     page.tsx              # Landing page + search
     api/search/route.ts   # Validates params, calls the active provider
   components/             # Navbar, SearchExperience, DealCard, etc.
+  data/
+    airports.json         # 3,200+ commercial airports (generated, server-only)
   lib/
     types.ts              # Shared Deal / SearchParams types
     providers/
       index.ts            # Picks provider from FLIGHT_PROVIDER env
       mock.ts             # Realistic generated deals (default)
       duffel.ts           # Live cash fares via Duffel API
-    airports.ts           # Airport list for autocomplete
+    airports.ts           # Airport dataset access + ranked search
+    alliances.ts          # Airline directory + alliance membership
+    booking.ts            # Per-airline cash/award booking deep links
     format.ts             # Pricing, sorting, value-score helpers
 ```
+
+## Airport data
+
+The autocomplete is backed by a comprehensive dataset of 3,200+ commercial
+airports (IATA code, city, name, country) derived from the public-domain
+[OurAirports](https://ourairports.com/data/) dataset. It lives in
+`src/data/airports.json` and is served via `/api/airports` so the full dataset
+never ships to the browser. To refresh it, see `scripts/build-airports.mjs`.
 
 Adding a new data source = implement the `FlightProvider` interface and wire it
 into `providers/index.ts`.
