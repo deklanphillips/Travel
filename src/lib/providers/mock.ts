@@ -1,6 +1,11 @@
 import type { CabinClass, Deal, FlightProvider, SearchParams } from "@/lib/types";
 import { getAirport } from "@/lib/airports";
-import { AIRLINES, type Airline } from "@/lib/alliances";
+import {
+  AIRLINES,
+  airlinesByAlliance,
+  majorAirlines,
+  type Airline,
+} from "@/lib/alliances";
 import { bookingLinksFor } from "@/lib/booking";
 
 // A deterministic-ish mock provider so the UI looks real without any API key.
@@ -9,16 +14,17 @@ import { bookingLinksFor } from "@/lib/booking";
 type Carrier = Airline;
 
 // Picks the pool of carriers to draw from, honoring airline/alliance filters.
+// Defaults to recognizable major carriers so results look realistic.
 function carrierPool(params: SearchParams): Carrier[] {
   if (params.airline) {
     const match = AIRLINES.filter((a) => a.code === params.airline);
     if (match.length) return match;
   }
   if (params.alliance && params.alliance !== "any") {
-    const match = AIRLINES.filter((a) => a.alliance === params.alliance);
+    const match = airlinesByAlliance(params.alliance);
     if (match.length) return match;
   }
-  return AIRLINES;
+  return majorAirlines();
 }
 
 const CABIN_MULTIPLIER: Record<CabinClass, number> = {

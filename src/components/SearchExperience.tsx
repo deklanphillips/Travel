@@ -2,12 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { AirportInput } from "./AirportInput";
+import { AirlineInput } from "./AirlineInput";
 import { DealCard } from "./DealCard";
 import { CABIN_LABELS, sortDeals, type SortKey } from "@/lib/format";
-import {
-  ALLIANCE_LABELS,
-  airlinesByAlliance,
-} from "@/lib/alliances";
 import type {
   AllianceFilter,
   CabinClass,
@@ -17,7 +14,12 @@ import type {
 
 const CABINS: CabinClass[] = ["economy", "premium_economy", "business", "first"];
 
-const ALLIANCES: AllianceFilter[] = ["any", "star", "oneworld", "skyteam"];
+const ALLIANCES: { key: AllianceFilter; label: string }[] = [
+  { key: "any", label: "Any alliance" },
+  { key: "star", label: "Star Alliance" },
+  { key: "oneworld", label: "Oneworld" },
+  { key: "skyteam", label: "SkyTeam" },
+];
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "best", label: "Best value" },
@@ -45,9 +47,6 @@ export function SearchExperience() {
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [sort, setSort] = useState<SortKey>("best");
-
-  // Airlines available in the airline dropdown, narrowed by the chosen alliance.
-  const airlineOptions = useMemo(() => airlinesByAlliance(alliance), [alliance]);
 
   const sortedDeals: Deal[] = useMemo(() => {
     if (!response) return [];
@@ -82,10 +81,8 @@ export function SearchExperience() {
 
   function changeAlliance(next: AllianceFilter) {
     setAlliance(next);
-    // Drop the selected airline if it no longer belongs to the chosen alliance.
-    if (airline && !airlinesByAlliance(next).some((a) => a.code === airline)) {
-      setAirline("");
-    }
+    // Reset the specific-airline filter when the alliance scope changes.
+    setAirline("");
   }
 
   return (
@@ -156,37 +153,23 @@ export function SearchExperience() {
             <div className="flex flex-wrap gap-2">
               {ALLIANCES.map((a) => (
                 <button
-                  key={a}
+                  key={a.key}
                   type="button"
-                  onClick={() => changeAlliance(a)}
+                  onClick={() => changeAlliance(a.key)}
                   className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                    alliance === a
+                    alliance === a.key
                       ? "bg-brand-500 text-white"
                       : "bg-white/5 text-slate-300 hover:bg-white/10"
                   }`}
                 >
-                  {a === "any" ? "Any alliance" : ALLIANCE_LABELS[a]}
+                  {a.label}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="sm:w-56">
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
-              Airline
-            </label>
-            <select
-              value={airline}
-              onChange={(e) => setAirline(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-ink-800 px-3.5 py-2.5 text-sm text-white transition hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            >
-              <option value="">Any airline</option>
-              {airlineOptions.map((a) => (
-                <option key={a.code} value={a.code}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
+          <div className="sm:w-60">
+            <AirlineInput value={airline} onChange={setAirline} alliance={alliance} />
           </div>
         </div>
 
