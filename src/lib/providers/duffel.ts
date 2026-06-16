@@ -1,6 +1,6 @@
 import type { Deal, FlightProvider, SearchParams, FlightSegment } from "@/lib/types";
-import { allianceOf } from "@/lib/alliances";
 import { bookingLinksFor } from "@/lib/booking";
+import { matchesFilters, parseIsoDuration } from "./shared";
 
 // Real flight pricing via the Duffel API (https://duffel.com).
 // Duffel returns live CASH fares. It does not expose loyalty award (miles)
@@ -32,28 +32,6 @@ const CABIN_MAP: Record<SearchParams["cabin"], string> = {
   business: "business",
   first: "first",
 };
-
-// Keeps only deals whose marketing carrier matches the airline/alliance filter.
-function matchesFilters(deal: Deal, params: SearchParams): boolean {
-  const codes = deal.segments.map((s) => s.carrierCode);
-  if (params.airline) {
-    return codes.includes(params.airline);
-  }
-  if (params.alliance && params.alliance !== "any") {
-    return codes.some((c) => allianceOf(c) === params.alliance);
-  }
-  return true;
-}
-
-// Parse an ISO-8601 duration like "PT13H35M" into minutes.
-function parseIsoDuration(value: string | null): number {
-  if (!value) return 0;
-  const match = value.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
-  if (!match) return 0;
-  const hours = Number(match[1] ?? 0);
-  const minutes = Number(match[2] ?? 0);
-  return hours * 60 + minutes;
-}
 
 export class DuffelProvider implements FlightProvider {
   name = "duffel";

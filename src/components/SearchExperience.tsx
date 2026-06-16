@@ -234,15 +234,27 @@ export function SearchExperience() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3">
-              {sortedDeals.map((deal, i) => (
-                <DealCard
-                  key={deal.id}
-                  deal={deal}
-                  isBest={sort === "best" && i === 0}
-                />
-              ))}
-            </div>
+            {sortedDeals.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-ink-800/40 px-4 py-10 text-center">
+                <p className="text-sm font-medium text-slate-300">
+                  No flights found for this search.
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Try different dates, a nearby airport, or loosen the alliance
+                  and airline filters.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {sortedDeals.map((deal, i) => (
+                  <DealCard
+                    key={deal.id}
+                    deal={deal}
+                    isBest={sort === "best" && i === 0}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>
