@@ -28,27 +28,46 @@ sample data — no API key needed.
 
 ## Switching to real flight data
 
-Copy the example env file and add a Duffel token:
+Copy the example env file and pick a provider:
 
 ```bash
 cp .env.example .env.local
 ```
+
+### Option A — Travelpayouts (recommended: free + earns commission)
+
+```env
+FLIGHT_PROVIDER=travelpayouts
+TRAVELPAYOUTS_TOKEN=your_api_token
+TRAVELPAYOUTS_MARKER=your_marker
+```
+
+1. Sign up free at [travelpayouts.com](https://www.travelpayouts.com).
+2. Create an **API token** and copy your affiliate **marker**.
+3. Restart `npm run dev` — searches return real cached fares, and each booking
+   link redirects the traveler to the airline/agent **and pays you commission**
+   (tagged with your marker).
+
+Travelpayouts is a meta-search affiliate model: cached lowest fares (not live
+seat availability), economy pricing only (the cabin selector is ignored), and
+booking is a redirect to the seller rather than in-app.
+
+### Option B — Duffel (live fares + in-app booking)
 
 ```env
 FLIGHT_PROVIDER=duffel
 DUFFEL_API_TOKEN=duffel_test_xxxxxxxx
 ```
 
-1. Sign up at [app.duffel.com](https://app.duffel.com) (free).
-2. Copy a **test** access token (starts `duffel_test_`).
-3. Restart `npm run dev` — searches now return real cash fares.
+Free token at [app.duffel.com](https://app.duffel.com). Test mode returns
+limited test-airline data; full live fares require going live.
 
-> **Note:** Amadeus's Self-Service API was previously considered here but is
-> being decommissioned (portal shutdown July 17, 2026), so it is not used.
+> **Note:** Amadeus's Self-Service API was considered earlier but is being
+> decommissioned (portal shutdown July 17, 2026), so it is not used.
 
 ### About award (miles) data
 
-Duffel returns live **cash** fares only. Loyalty **award/miles** availability
+These APIs return **cash** fares only. Loyalty **award/miles** availability
 isn't offered by any public API — it's what seats.aero scrapes from each
 program — so real-data results show cash prices and leave the miles field empty
 until a dedicated award source is added. With `FLIGHT_PROVIDER=mock` you still
