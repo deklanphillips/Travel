@@ -9,6 +9,8 @@ import type {
 } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+// Live providers (e.g. Travelpayouts realtime search) poll for several seconds.
+export const maxDuration = 30;
 
 const VALID_CABINS: CabinClass[] = [
   "economy",
