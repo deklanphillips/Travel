@@ -1,28 +1,24 @@
 import type { CabinClass, Deal, FlightProvider, SearchParams } from "@/lib/types";
 import { getAirport } from "@/lib/airports";
+import { AIRLINES, type Airline } from "@/lib/alliances";
 
 // A deterministic-ish mock provider so the UI looks real without any API key.
 // It generates a spread of itineraries with both cash and award (miles) pricing.
 
-interface Carrier {
-  name: string;
-  code: string;
-  program: string;
-  programCode: string;
-}
+type Carrier = Airline;
 
-const CARRIERS: Carrier[] = [
-  { name: "British Airways", code: "BA", program: "Avios", programCode: "BA" },
-  { name: "American Airlines", code: "AA", program: "AAdvantage", programCode: "AA" },
-  { name: "United Airlines", code: "UA", program: "MileagePlus", programCode: "UA" },
-  { name: "Delta Air Lines", code: "DL", program: "SkyMiles", programCode: "DL" },
-  { name: "Air France", code: "AF", program: "Flying Blue", programCode: "AF" },
-  { name: "Lufthansa", code: "LH", program: "Miles & More", programCode: "LH" },
-  { name: "Emirates", code: "EK", program: "Skywards", programCode: "EK" },
-  { name: "Qatar Airways", code: "QR", program: "Privilege Club", programCode: "QR" },
-  { name: "Singapore Airlines", code: "SQ", program: "KrisFlyer", programCode: "SQ" },
-  { name: "ANA", code: "NH", program: "ANA Mileage Club", programCode: "NH" },
-];
+// Picks the pool of carriers to draw from, honoring airline/alliance filters.
+function carrierPool(params: SearchParams): Carrier[] {
+  if (params.airline) {
+    const match = AIRLINES.filter((a) => a.code === params.airline);
+    if (match.length) return match;
+  }
+  if (params.alliance && params.alliance !== "any") {
+    const match = AIRLINES.filter((a) => a.alliance === params.alliance);
+    if (match.length) return match;
+  }
+  return AIRLINES;
+}
 
 const CABIN_MULTIPLIER: Record<CabinClass, number> = {
   economy: 1,
@@ -69,16 +65,19 @@ export class MockProvider implements FlightProvider {
 
   async search(params: SearchParams): Promise<Deal[]> {
     const { origin, destination, departDate, cabin, passengers } = params;
-    const seed = hashString(`${origin}-${destination}-${departDate}-${cabin}`);
+    const seed = hashString(
+      `${origin}-${destination}-${departDate}-${cabin}-${params.alliance ?? "any"}-${params.airline ?? ""}`,
+    );
     const rng = makeRng(seed);
     const distance = distanceProxy(origin, destination);
     const cabinMult = CABIN_MULTIPLIER[cabin];
+    const pool = carrierPool(params);
 
     const count = 6 + Math.floor(rng() * 5); // 6–10 results
     const deals: Deal[] = [];
 
     for (let i = 0; i < count; i++) {
-      const carrier = CARRIERS[Math.floor(rng() * CARRIERS.length)];
+      const carrier = pool[Math.floor(rng() * pool.length)];
       const stops = rng() < 0.55 ? 0 : rng() < 0.85 ? 1 : 2;
 
       const flightMinutes = Math.round(distance / 8 + stops * 90 + rng() * 120);

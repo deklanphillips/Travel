@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { getProvider } from "@/lib/providers";
-import type { CabinClass, SearchParams, SearchResponse } from "@/lib/types";
+import { getAirline } from "@/lib/alliances";
+import type {
+  AllianceFilter,
+  CabinClass,
+  SearchParams,
+  SearchResponse,
+} from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +17,8 @@ const VALID_CABINS: CabinClass[] = [
   "first",
 ];
 
+const VALID_ALLIANCES: AllianceFilter[] = ["any", "star", "oneworld", "skyteam"];
+
 function parseParams(searchParams: URLSearchParams): SearchParams | { error: string } {
   const origin = (searchParams.get("origin") ?? "").toUpperCase().trim();
   const destination = (searchParams.get("destination") ?? "").toUpperCase().trim();
@@ -18,6 +26,8 @@ function parseParams(searchParams: URLSearchParams): SearchParams | { error: str
   const returnDate = searchParams.get("returnDate") ?? undefined;
   const passengers = Number(searchParams.get("passengers") ?? "1");
   const cabin = (searchParams.get("cabin") ?? "economy") as CabinClass;
+  const alliance = (searchParams.get("alliance") ?? "any") as AllianceFilter;
+  const airlineParam = (searchParams.get("airline") ?? "").toUpperCase().trim();
 
   if (!/^[A-Z]{3}$/.test(origin)) return { error: "Invalid origin airport code." };
   if (!/^[A-Z]{3}$/.test(destination))
@@ -31,6 +41,10 @@ function parseParams(searchParams: URLSearchParams): SearchParams | { error: str
   if (!Number.isFinite(passengers) || passengers < 1 || passengers > 9)
     return { error: "Passengers must be between 1 and 9." };
   if (!VALID_CABINS.includes(cabin)) return { error: "Invalid cabin class." };
+  if (!VALID_ALLIANCES.includes(alliance))
+    return { error: "Invalid alliance filter." };
+  if (airlineParam && !getAirline(airlineParam))
+    return { error: "Unknown airline." };
 
   return {
     origin,
@@ -39,6 +53,8 @@ function parseParams(searchParams: URLSearchParams): SearchParams | { error: str
     returnDate: returnDate || undefined,
     passengers,
     cabin,
+    alliance,
+    airline: airlineParam || undefined,
   };
 }
 

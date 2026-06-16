@@ -16,14 +16,35 @@ function ProgramBadge({ code }: { code: string }) {
   );
 }
 
-export function DealCard({ deal, isBest }: { deal: Deal; isBest?: boolean }) {
+export function DealCard({
+  deal,
+  isBest,
+  onSelect,
+}: {
+  deal: Deal;
+  isBest?: boolean;
+  onSelect?: () => void;
+}) {
   const first = deal.segments[0];
   const last = deal.segments[deal.segments.length - 1];
   const stopsLabel =
     deal.stops === 0 ? "Nonstop" : `${deal.stops} stop${deal.stops > 1 ? "s" : ""}`;
 
   return (
-    <article className="group relative animate-fade-up rounded-2xl border border-white/10 bg-ink-800/60 p-4 transition hover:border-brand-500/40 hover:bg-ink-800 sm:p-5">
+    <article
+      onClick={onSelect}
+      role={onSelect ? "button" : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (onSelect && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      className={`group relative animate-fade-up rounded-2xl border border-white/10 bg-ink-800/60 p-4 transition hover:border-brand-500/40 hover:bg-ink-800 sm:p-5 ${
+        onSelect ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500" : ""
+      }`}
+    >
       {isBest && (
         <span className="absolute -top-2.5 left-4 rounded-full bg-gradient-to-r from-brand-500 to-purple-500 px-2.5 py-0.5 text-[11px] font-semibold text-white shadow">
           Best value
@@ -118,6 +139,23 @@ export function DealCard({ deal, isBest }: { deal: Deal; isBest?: boolean }) {
           />
         </div>
       </div>
+
+      {onSelect && (
+        <div className="mt-3 flex items-center justify-end border-t border-white/5 pt-3 text-sm font-medium text-brand-300 transition group-hover:text-brand-200">
+          Select &amp; book
+          <svg
+            className="ml-1 h-4 w-4 transition group-hover:translate-x-0.5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </div>
+      )}
     </article>
   );
 }

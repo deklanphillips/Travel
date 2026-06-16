@@ -1,12 +1,26 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AirportInput } from "./AirportInput";
 import { DealCard } from "./DealCard";
 import { CABIN_LABELS, sortDeals, type SortKey } from "@/lib/format";
-import type { CabinClass, Deal, SearchResponse } from "@/lib/types";
+import {
+  ALLIANCE_LABELS,
+  airlinesByAlliance,
+} from "@/lib/alliances";
+import { saveCheckout } from "@/lib/checkout";
+import type {
+  AllianceFilter,
+  CabinClass,
+  Deal,
+  SearchParams,
+  SearchResponse,
+} from "@/lib/types";
 
 const CABINS: CabinClass[] = ["economy", "premium_economy", "business", "first"];
+
+const ALLIANCES: AllianceFilter[] = ["any", "star", "oneworld", "skyteam"];
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "best", label: "Best value" },
@@ -22,16 +36,22 @@ function todayPlus(days: number): string {
 }
 
 export function SearchExperience() {
+  const router = useRouter();
   const [origin, setOrigin] = useState("JFK");
   const [destination, setDestination] = useState("LHR");
   const [departDate, setDepartDate] = useState(todayPlus(30));
   const [passengers, setPassengers] = useState(1);
   const [cabin, setCabin] = useState<CabinClass>("business");
+  const [alliance, setAlliance] = useState<AllianceFilter>("any");
+  const [airline, setAirline] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [sort, setSort] = useState<SortKey>("best");
+
+  // Airlines available in the airline dropdown, narrowed by the chosen alliance.
+  const airlineOptions = useMemo(() => airlinesByAlliance(alliance), [alliance]);
 
   const sortedDeals: Deal[] = useMemo(() => {
     if (!response) return [];
@@ -50,7 +70,9 @@ export function SearchExperience() {
         departDate,
         passengers: String(passengers),
         cabin,
+        alliance,
       });
+      if (airline) qs.set("airline", airline);
       const res = await fetch(`/api/search?${qs.toString()}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Search failed");
@@ -60,6 +82,30 @@ export function SearchExperience() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function changeAlliance(next: AllianceFilter) {
+    setAlliance(next);
+    // Drop the selected airline if it no longer belongs to the chosen alliance.
+    if (airline && !airlinesByAlliance(next).some((a) => a.code === airline)) {
+      setAirline("");
+    }
+  }
+
+  // Persist the chosen deal + trip context, then jump to the checkout screen.
+  function selectDeal(deal: Deal) {
+    if (!response) return;
+    const params: SearchParams = {
+      origin,
+      destination,
+      departDate,
+      passengers,
+      cabin,
+      alliance,
+      airline: airline || undefined,
+    };
+    saveCheckout({ deal, params });
+    router.push(`/checkout/${encodeURIComponent(deal.id)}`);
   }
 
   return (
@@ -104,24 +150,67 @@ export function SearchExperience() {
           </div>
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {CABINS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCabin(c)}
-                className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
-                  cabin === c
-                    ? "bg-white text-ink-900"
-                    : "bg-white/5 text-slate-300 hover:bg-white/10"
-                }`}
-              >
-                {CABIN_LABELS[c]}
-              </button>
-            ))}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {CABINS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCabin(c)}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
+                cabin === c
+                  ? "bg-white text-ink-900"
+                  : "bg-white/5 text-slate-300 hover:bg-white/10"
+              }`}
+            >
+              {CABIN_LABELS[c]}
+            </button>
+          ))}
+        </div>
+
+        {/* Alliance + airline filters */}
+        <div className="mt-4 flex flex-col gap-3 border-t border-white/5 pt-4 sm:flex-row sm:items-end sm:gap-4">
+          <div className="flex-1">
+            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
+              Alliance
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {ALLIANCES.map((a) => (
+                <button
+                  key={a}
+                  type="button"
+                  onClick={() => changeAlliance(a)}
+                  className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                    alliance === a
+                      ? "bg-brand-500 text-white"
+                      : "bg-white/5 text-slate-300 hover:bg-white/10"
+                  }`}
+                >
+                  {a === "any" ? "Any alliance" : ALLIANCE_LABELS[a]}
+                </button>
+              ))}
+            </div>
           </div>
 
+          <div className="sm:w-56">
+            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
+              Airline
+            </label>
+            <select
+              value={airline}
+              onChange={(e) => setAirline(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-ink-800 px-3.5 py-2.5 text-sm text-white transition hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <option value="">Any airline</option>
+              {airlineOptions.map((a) => (
+                <option key={a.code} value={a.code}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-5 flex justify-end">
           <button
             type="submit"
             disabled={loading}
@@ -184,7 +273,12 @@ export function SearchExperience() {
 
             <div className="flex flex-col gap-3">
               {sortedDeals.map((deal, i) => (
-                <DealCard key={deal.id} deal={deal} isBest={sort === "best" && i === 0} />
+                <DealCard
+                  key={deal.id}
+                  deal={deal}
+                  isBest={sort === "best" && i === 0}
+                  onSelect={() => selectDeal(deal)}
+                />
               ))}
             </div>
           </>

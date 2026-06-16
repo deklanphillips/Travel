@@ -2,6 +2,8 @@
 
 export type CabinClass = "economy" | "premium_economy" | "business" | "first";
 
+export type AllianceFilter = "any" | "star" | "oneworld" | "skyteam";
+
 export interface SearchParams {
   origin: string; // IATA code, e.g. "JFK"
   destination: string; // IATA code, e.g. "LHR"
@@ -9,6 +11,8 @@ export interface SearchParams {
   returnDate?: string; // optional ISO date for round trips
   passengers: number;
   cabin: CabinClass;
+  alliance?: AllianceFilter; // restrict to an alliance ("any" = no filter)
+  airline?: string; // restrict to a single carrier IATA code (overrides alliance)
 }
 
 export interface FlightSegment {
