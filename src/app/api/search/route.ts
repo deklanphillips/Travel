@@ -81,8 +81,13 @@ export async function GET(request: Request) {
     return NextResponse.json(response);
   } catch (err) {
     console.error("[search] provider error", err);
+    const detail = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: "Search failed. Please try again." },
+      {
+        error: "Search failed. Please try again.",
+        // Surfaced to help diagnose provider/credential issues during setup.
+        detail,
+      },
       { status: 502 },
     );
   }

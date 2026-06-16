@@ -70,7 +70,9 @@ export function SearchExperience() {
       if (airline) qs.set("airline", airline);
       const res = await fetch(`/api/search?${qs.toString()}`);
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Search failed");
+      if (!res.ok) {
+        throw new Error(json.detail || json.error || "Search failed");
+      }
       setResponse(json as SearchResponse);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
