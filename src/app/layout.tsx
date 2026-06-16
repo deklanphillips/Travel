@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "FareHawk — Best flight deals in cash or miles",
+  title: "Pointfare — Best flight deals in cash or miles",
   description:
     "Search flights and award availability side by side. Find the cheapest way to fly — whether you pay with cash or points.",
 };

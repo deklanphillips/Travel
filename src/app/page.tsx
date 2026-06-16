@@ -21,7 +21,7 @@ export default function Home() {
             </span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-lg text-slate-400">
-            FareHawk searches flight prices and award availability at the same
+            Pointfare searches flight prices and award availability at the same
             time, so you always book the best value seat.
           </p>
         </div>

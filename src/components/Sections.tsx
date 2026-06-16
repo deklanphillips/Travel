@@ -35,7 +35,7 @@ export function HowItWorks() {
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-slate-400">
           Stop guessing whether points or your wallet gets you the better seat.
-          FareHawk puts them side by side.
+          Pointfare puts them side by side.
         </p>
       </div>
 
@@ -178,7 +178,7 @@ export function Footer() {
     <footer className="border-t border-white/5 py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
         <p className="text-sm text-slate-500">
-          © {new Date().getFullYear()} FareHawk. Built for points nerds.
+          © {new Date().getFullYear()} Pointfare. Built for points nerds.
         </p>
         <p className="text-xs text-slate-600">
           Fares shown are estimates. Verify with the airline before booking.

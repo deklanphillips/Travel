@@ -8,7 +8,7 @@ export function Navbar() {
         <Link href="/" className="flex items-center gap-2">
           <Logo />
           <span className="text-lg font-semibold tracking-tight">
-            Fare<span className="text-brand-400">Hawk</span>
+            Point<span className="text-brand-400">fare</span>
           </span>
         </Link>
 

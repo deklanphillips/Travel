@@ -1,6 +1,6 @@
-# FareHawk ✈️
+# Pointfare ✈️
 
-Find the cheapest way to fly — **in cash or miles**. FareHawk searches flight
+Find the cheapest way to fly — **in cash or miles**. Pointfare searches flight
 prices and loyalty-program award availability side by side, inspired by
 [seats.aero](https://seats.aero).
 
