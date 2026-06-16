@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { AirportInput } from "./AirportInput";
 import { DealCard } from "./DealCard";
 import { CABIN_LABELS, sortDeals, type SortKey } from "@/lib/format";
@@ -9,12 +8,10 @@ import {
   ALLIANCE_LABELS,
   airlinesByAlliance,
 } from "@/lib/alliances";
-import { saveCheckout } from "@/lib/checkout";
 import type {
   AllianceFilter,
   CabinClass,
   Deal,
-  SearchParams,
   SearchResponse,
 } from "@/lib/types";
 
@@ -36,7 +33,6 @@ function todayPlus(days: number): string {
 }
 
 export function SearchExperience() {
-  const router = useRouter();
   const [origin, setOrigin] = useState("JFK");
   const [destination, setDestination] = useState("LHR");
   const [departDate, setDepartDate] = useState(todayPlus(30));
@@ -90,22 +86,6 @@ export function SearchExperience() {
     if (airline && !airlinesByAlliance(next).some((a) => a.code === airline)) {
       setAirline("");
     }
-  }
-
-  // Persist the chosen deal + trip context, then jump to the checkout screen.
-  function selectDeal(deal: Deal) {
-    if (!response) return;
-    const params: SearchParams = {
-      origin,
-      destination,
-      departDate,
-      passengers,
-      cabin,
-      alliance,
-      airline: airline || undefined,
-    };
-    saveCheckout({ deal, params });
-    router.push(`/checkout/${encodeURIComponent(deal.id)}`);
   }
 
   return (
@@ -277,7 +257,6 @@ export function SearchExperience() {
                   key={deal.id}
                   deal={deal}
                   isBest={sort === "best" && i === 0}
-                  onSelect={() => selectDeal(deal)}
                 />
               ))}
             </div>

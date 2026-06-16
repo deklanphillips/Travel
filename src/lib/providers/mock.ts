@@ -1,6 +1,7 @@
 import type { CabinClass, Deal, FlightProvider, SearchParams } from "@/lib/types";
 import { getAirport } from "@/lib/airports";
 import { AIRLINES, type Airline } from "@/lib/alliances";
+import { bookingLinksFor } from "@/lib/booking";
 
 // A deterministic-ish mock provider so the UI looks real without any API key.
 // It generates a spread of itineraries with both cash and award (miles) pricing.
@@ -118,6 +119,8 @@ export class MockProvider implements FlightProvider {
       // Guarantee at least one of cash / award exists.
       const finalCash = cashPrice ?? (award ? null : Math.round(baseCash * passengers));
 
+      const links = bookingLinksFor(carrier.code, params);
+
       deals.push({
         id: `${carrier.code}-${i}-${seed}`,
         origin,
@@ -128,6 +131,8 @@ export class MockProvider implements FlightProvider {
         cabin,
         cashPrice: finalCash,
         award,
+        cashBookingUrl: finalCash !== null ? links.cash : null,
+        awardBookingUrl: award ? links.award : null,
         seatsLeft: rng() < 0.4 ? 1 + Math.floor(rng() * 6) : null,
         provider: this.name,
       });

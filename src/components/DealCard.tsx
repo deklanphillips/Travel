@@ -16,35 +16,14 @@ function ProgramBadge({ code }: { code: string }) {
   );
 }
 
-export function DealCard({
-  deal,
-  isBest,
-  onSelect,
-}: {
-  deal: Deal;
-  isBest?: boolean;
-  onSelect?: () => void;
-}) {
+export function DealCard({ deal, isBest }: { deal: Deal; isBest?: boolean }) {
   const first = deal.segments[0];
   const last = deal.segments[deal.segments.length - 1];
   const stopsLabel =
     deal.stops === 0 ? "Nonstop" : `${deal.stops} stop${deal.stops > 1 ? "s" : ""}`;
 
   return (
-    <article
-      onClick={onSelect}
-      role={onSelect ? "button" : undefined}
-      tabIndex={onSelect ? 0 : undefined}
-      onKeyDown={(e) => {
-        if (onSelect && (e.key === "Enter" || e.key === " ")) {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
-      className={`group relative animate-fade-up rounded-2xl border border-white/10 bg-ink-800/60 p-4 transition hover:border-brand-500/40 hover:bg-ink-800 sm:p-5 ${
-        onSelect ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500" : ""
-      }`}
-    >
+    <article className="group relative animate-fade-up rounded-2xl border border-white/10 bg-ink-800/60 p-4 transition hover:border-brand-500/40 hover:bg-ink-800 sm:p-5">
       {isBest && (
         <span className="absolute -top-2.5 left-4 rounded-full bg-gradient-to-r from-brand-500 to-purple-500 px-2.5 py-0.5 text-[11px] font-semibold text-white shadow">
           Best value
@@ -109,12 +88,14 @@ export function DealCard({
           )}
         </div>
 
-        {/* Pricing */}
+        {/* Pricing — each tile deep-links to the airline's booking site */}
         <div className="flex shrink-0 items-stretch gap-3 sm:w-72 sm:flex-col sm:gap-2">
           <PriceTile
             kind="cash"
             label="Cash"
             value={deal.cashPrice !== null ? formatUSD(deal.cashPrice) : "—"}
+            href={deal.cashBookingUrl}
+            bookOn={first.carrier}
             highlight={
               deal.cashPrice !== null &&
               (deal.award === null ||
@@ -130,6 +111,8 @@ export function DealCard({
                 : "—"
             }
             sub={deal.award ? `+ ${formatUSD(deal.award.fees)} fees` : undefined}
+            href={deal.awardBookingUrl}
+            bookOn={deal.award ? deal.award.program : undefined}
             highlight={
               deal.award !== null &&
               (deal.cashPrice === null ||
@@ -139,23 +122,6 @@ export function DealCard({
           />
         </div>
       </div>
-
-      {onSelect && (
-        <div className="mt-3 flex items-center justify-end border-t border-white/5 pt-3 text-sm font-medium text-brand-300 transition group-hover:text-brand-200">
-          Select &amp; book
-          <svg
-            className="ml-1 h-4 w-4 transition group-hover:translate-x-0.5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </div>
-      )}
     </article>
   );
 }
@@ -164,23 +130,23 @@ function PriceTile({
   kind,
   label,
   value,
+  href,
+  bookOn,
   sub,
   highlight,
 }: {
   kind: "cash" | "miles";
   label: string;
   value: string;
+  href?: string | null;
+  bookOn?: string;
   sub?: string;
   highlight?: boolean;
 }) {
-  return (
-    <div
-      className={`flex flex-1 flex-col justify-center rounded-xl border px-3 py-2 transition ${
-        highlight
-          ? "border-emerald-400/40 bg-emerald-400/10"
-          : "border-white/10 bg-ink-900/40"
-      }`}
-    >
+  const clickable = Boolean(href);
+
+  const inner = (
+    <>
       <span className="text-[11px] uppercase tracking-wide text-slate-400">
         {label}
       </span>
@@ -192,7 +158,42 @@ function PriceTile({
         {value}
       </span>
       {sub && <span className="text-[11px] text-slate-500">{sub}</span>}
+      {clickable && bookOn && (
+        <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-brand-300 opacity-0 transition group-hover:opacity-100">
+          Book on {bookOn}
+          <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+            <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+          </svg>
+        </span>
+      )}
       <span className="sr-only">{kind}</span>
-    </div>
+    </>
   );
+
+  const className = `flex flex-1 flex-col justify-center rounded-xl border px-3 py-2 transition ${
+    highlight
+      ? "border-emerald-400/40 bg-emerald-400/10"
+      : "border-white/10 bg-ink-900/40"
+  } ${
+    clickable
+      ? "cursor-pointer hover:border-brand-400/60 hover:bg-brand-500/10 focus:outline-none focus:ring-2 focus:ring-brand-500"
+      : ""
+  }`;
+
+  if (clickable) {
+    return (
+      <a
+        href={href!}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className}
+        aria-label={`Book ${label} fare${bookOn ? ` on ${bookOn}` : ""}`}
+      >
+        {inner}
+      </a>
+    );
+  }
+
+  return <div className={className}>{inner}</div>;
 }

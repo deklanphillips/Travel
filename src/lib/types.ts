@@ -42,6 +42,8 @@ export interface Deal {
   cabin: CabinClass;
   cashPrice: number | null; // total cash price in USD, null if award-only
   award: AwardPricing | null; // best award option, null if cash-only
+  cashBookingUrl: string | null; // deep link to airline cash booking, null if no cash
+  awardBookingUrl: string | null; // deep link to airline award booking, null if no award
   seatsLeft: number | null;
   provider: string; // which data source produced this deal
 }

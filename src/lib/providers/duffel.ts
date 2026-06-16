@@ -1,5 +1,6 @@
 import type { Deal, FlightProvider, SearchParams, FlightSegment } from "@/lib/types";
 import { allianceOf } from "@/lib/alliances";
+import { bookingLinksFor } from "@/lib/booking";
 
 // Real flight pricing via the Duffel API (https://duffel.com).
 // Duffel returns live CASH fares. It does not expose loyalty award (miles)
@@ -126,6 +127,7 @@ export class DuffelProvider implements FlightProvider {
       0,
     );
     const stops = Math.max(0, segments.length - offer.slices.length);
+    const carrierCode = segments[0]?.carrierCode ?? "";
 
     return {
       id: offer.id,
@@ -137,6 +139,8 @@ export class DuffelProvider implements FlightProvider {
       cabin: params.cabin,
       cashPrice: Math.round(Number(offer.total_amount)),
       award: null,
+      cashBookingUrl: bookingLinksFor(carrierCode, params).cash,
+      awardBookingUrl: null,
       seatsLeft: null,
       provider: this.name,
     };
