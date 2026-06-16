@@ -146,6 +146,11 @@ export class TravelpayoutsLiveProvider implements FlightProvider {
     });
 
     if (!res.ok) {
+      if (res.status === 403) {
+        throw new Error(
+          "Live search API access not granted (Travelpayouts requires approval + 50k monthly active users). Use FLIGHT_PROVIDER=travelpayouts instead.",
+        );
+      }
       throw new Error(
         `Travelpayouts live init error ${res.status}: ${await res.text()}`,
       );
