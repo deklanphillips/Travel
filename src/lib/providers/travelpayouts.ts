@@ -99,8 +99,8 @@ export class TravelpayoutsProvider implements FlightProvider {
     ).toISOString();
 
     const segment: FlightSegment = {
-      from: item.origin,
-      to: item.destination,
+      from: item.origin_airport || item.origin,
+      to: item.destination_airport || item.destination,
       departTime: item.departure_at,
       arriveTime,
       carrier: carrierName,
