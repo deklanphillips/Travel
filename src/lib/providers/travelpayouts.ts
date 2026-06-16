@@ -5,15 +5,15 @@ import type {
   SearchParams,
 } from "@/lib/types";
 import { getAirline } from "@/lib/alliances";
+import { bookingLinksFor } from "@/lib/booking";
 import { matchesFilters } from "./shared";
 
 // Real (cached) cash fares via the Travelpayouts / Aviasales Flight Data API.
 // https://support.travelpayouts.com — "Prices for dates" (prices_for_dates v3).
 //
 // Returns the cheapest tickets Aviasales users found recently for a route/date.
-// Each result carries an affiliate `link` that redirects the traveler to the
-// seller (usually the airline, sometimes an OTA) and earns commission via your
-// marker — so booking links monetize automatically.
+// Booking links point straight to the operating airline's own site (via
+// booking.ts), not the Aviasales affiliate redirect.
 //
 // Notes / limitations of this data source:
 //  - Cached lowest fares (not live seat-level availability).
@@ -54,7 +54,6 @@ export class TravelpayoutsProvider implements FlightProvider {
 
   constructor(
     private token: string,
-    private marker: string,
     private currency = "usd",
     private market = "us",
   ) {}
@@ -118,22 +117,12 @@ export class TravelpayoutsProvider implements FlightProvider {
       cabin: params.cabin,
       cashPrice: Math.round(item.price),
       award: null,
-      cashBookingUrl: this.bookingLink(item.link),
+      // Link straight to the operating airline's own booking site (pre-filled
+      // with the searched route/date) rather than the Aviasales redirect.
+      cashBookingUrl: bookingLinksFor(code, params).cash,
       awardBookingUrl: null,
       seatsLeft: null,
       provider: this.name,
     };
-  }
-
-  // Turns the relative Aviasales path into an absolute, marker-tagged URL so
-  // clicks are tracked and attributed for commission.
-  private bookingLink(link: string): string {
-    try {
-      const u = new URL(`https://www.aviasales.com${link}`);
-      if (this.marker) u.searchParams.set("marker", this.marker);
-      return u.toString();
-    } catch {
-      return `https://www.aviasales.com${link}`;
-    }
   }
 }

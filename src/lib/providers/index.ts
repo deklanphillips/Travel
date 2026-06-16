@@ -10,7 +10,6 @@ export function getProvider(): FlightProvider {
 
   if (choice === "travelpayouts") {
     const token = process.env.TRAVELPAYOUTS_TOKEN;
-    const marker = process.env.TRAVELPAYOUTS_MARKER ?? "";
     if (!token) {
       console.warn(
         "[providers] FLIGHT_PROVIDER=travelpayouts but TRAVELPAYOUTS_TOKEN missing — falling back to mock.",
@@ -19,7 +18,6 @@ export function getProvider(): FlightProvider {
     }
     return new TravelpayoutsProvider(
       token,
-      marker,
       process.env.TRAVELPAYOUTS_CURRENCY ?? "usd",
       process.env.TRAVELPAYOUTS_MARKET ?? "us",
     );
