@@ -5,6 +5,7 @@ import { AirportInput } from "./AirportInput";
 import { AirlineInput } from "./AirlineInput";
 import { DealCard } from "./DealCard";
 import { CABIN_LABELS, sortDeals, type SortKey } from "@/lib/format";
+import { useEntitlement } from "@/lib/entitlement";
 import type {
   AllianceFilter,
   CabinClass,
@@ -35,6 +36,8 @@ function todayPlus(days: number): string {
 }
 
 export function SearchExperience() {
+  const { isPro, startCheckout } = useEntitlement();
+  const locked = !isPro;
   const [origin, setOrigin] = useState("JFK");
   const [destination, setDestination] = useState("LHR");
   const [departDate, setDepartDate] = useState(todayPlus(30));
@@ -247,15 +250,48 @@ export function SearchExperience() {
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col gap-3">
-                {sortedDeals.map((deal, i) => (
-                  <DealCard
-                    key={deal.id}
-                    deal={deal}
-                    isBest={sort === "best" && i === 0}
-                  />
-                ))}
-              </div>
+              <>
+                {locked && (
+                  <div className="mb-4 flex flex-col items-start gap-3 rounded-2xl border border-brand-400/30 bg-gradient-to-r from-brand-500/10 to-purple-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500/20 text-brand-200">
+                        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path
+                            fillRule="evenodd"
+                            d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-white">
+                          Prices are hidden
+                        </p>
+                        <p className="text-sm text-slate-400">
+                          Go Pro to reveal every fare and book in one tap.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={startCheckout}
+                      className="w-full shrink-0 rounded-xl bg-gradient-to-r from-brand-500 to-purple-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/20 transition hover:opacity-95 sm:w-auto"
+                    >
+                      Unlock all prices
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-3">
+                  {sortedDeals.map((deal, i) => (
+                    <DealCard
+                      key={deal.id}
+                      deal={deal}
+                      isBest={sort === "best" && i === 0}
+                      locked={locked}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </>
         )}

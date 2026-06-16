@@ -16,7 +16,15 @@ function ProgramBadge({ code }: { code: string }) {
   );
 }
 
-export function DealCard({ deal, isBest }: { deal: Deal; isBest?: boolean }) {
+export function DealCard({
+  deal,
+  isBest,
+  locked,
+}: {
+  deal: Deal;
+  isBest?: boolean;
+  locked?: boolean;
+}) {
   const first = deal.segments[0];
   const last = deal.segments[deal.segments.length - 1];
   const stopsLabel =
@@ -96,6 +104,7 @@ export function DealCard({ deal, isBest }: { deal: Deal; isBest?: boolean }) {
             value={deal.cashPrice !== null ? formatUSD(deal.cashPrice) : "—"}
             href={deal.cashBookingUrl}
             bookOn={first.carrier}
+            locked={locked}
             highlight={
               deal.cashPrice !== null &&
               (deal.award === null ||
@@ -113,6 +122,7 @@ export function DealCard({ deal, isBest }: { deal: Deal; isBest?: boolean }) {
             sub={deal.award ? `+ ${formatUSD(deal.award.fees)} fees` : undefined}
             href={deal.awardBookingUrl}
             bookOn={deal.award ? deal.award.program : undefined}
+            locked={locked}
             highlight={
               deal.award !== null &&
               (deal.cashPrice === null ||
@@ -134,6 +144,7 @@ function PriceTile({
   bookOn,
   sub,
   highlight,
+  locked,
 }: {
   kind: "cash" | "miles";
   label: string;
@@ -142,8 +153,10 @@ function PriceTile({
   bookOn?: string;
   sub?: string;
   highlight?: boolean;
+  locked?: boolean;
 }) {
-  const clickable = Boolean(href);
+  const hasValue = value !== "—";
+  const clickable = Boolean(href) && !locked;
 
   const inner = (
     <>
@@ -152,12 +165,31 @@ function PriceTile({
       </span>
       <span
         className={`text-base font-bold ${
-          value === "—" ? "text-slate-600" : "text-white"
-        }`}
+          !hasValue ? "text-slate-600" : "text-white"
+        } ${locked && hasValue ? "select-none blur-[6px]" : ""}`}
+        aria-hidden={locked && hasValue ? true : undefined}
       >
-        {value}
+        {locked && hasValue ? "$888" : value}
       </span>
-      {sub && <span className="text-[11px] text-slate-500">{sub}</span>}
+      {sub && (
+        <span
+          className={`text-[11px] text-slate-500 ${locked ? "select-none blur-[5px]" : ""}`}
+        >
+          {sub}
+        </span>
+      )}
+      {locked && hasValue && (
+        <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-brand-300">
+          <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              fillRule="evenodd"
+              d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Pro
+        </span>
+      )}
       {clickable && bookOn && (
         <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-brand-300 opacity-0 transition group-hover:opacity-100">
           Book on {bookOn}

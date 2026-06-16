@@ -1,3 +1,5 @@
+import { PlanButton } from "./PlanButton";
+
 const PROGRAMS = [
   "Avios",
   "AAdvantage",
@@ -157,15 +159,7 @@ export function Pricing() {
                 </li>
               ))}
             </ul>
-            <button
-              className={`w-full rounded-xl px-4 py-3 text-sm font-semibold transition ${
-                tier.featured
-                  ? "bg-white text-ink-900 hover:bg-slate-100"
-                  : "bg-white/5 text-white hover:bg-white/10"
-              }`}
-            >
-              {tier.cta}
-            </button>
+            <PlanButton featured={tier.featured} label={tier.cta} />
           </div>
         ))}
       </div>
