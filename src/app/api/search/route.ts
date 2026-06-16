@@ -75,7 +75,8 @@ export async function GET(request: Request) {
     const response: SearchResponse = {
       params: parsed,
       deals,
-      provider: provider.name,
+      // Generic label only — never expose the underlying data provider's name.
+      provider: provider.name === "mock" ? "mock" : "live",
       generatedAt: new Date().toISOString(),
     };
     return NextResponse.json(response);
@@ -84,9 +85,10 @@ export async function GET(request: Request) {
     const detail = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
       {
-        error: "Search failed. Please try again.",
-        // Surfaced to help diagnose provider/credential issues during setup.
-        detail,
+        error: "The site hit a refresh error — please search again.",
+        // Technical detail is exposed only in local development so real users
+        // never see internal errors (or which data provider we use) in production.
+        ...(process.env.NODE_ENV === "development" ? { detail } : {}),
       },
       { status: 502 },
     );
