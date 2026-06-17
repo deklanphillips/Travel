@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { AirportInput } from "./AirportInput";
 import { AirlineInput } from "./AirlineInput";
 import { DealCard } from "./DealCard";
+import { AlertForm } from "./AlertForm";
 import {
   CABIN_LABELS,
   countDeals,
@@ -57,6 +58,7 @@ export function SearchExperience() {
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [sort, setSort] = useState<SortKey>("best");
   const [dealsOnly, setDealsOnly] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
 
   // Which results are deals (below the route's typical price).
   const dealFlags = useMemo(
@@ -241,6 +243,24 @@ export function SearchExperience() {
                 )}
               </p>
               <div className="flex flex-wrap items-center gap-2">
+                {/* Price-drop alert (Pro) */}
+                <button
+                  onClick={() =>
+                    isPro ? setShowAlert((v) => !v) : startCheckout()
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-white/10"
+                >
+                  🔔 Alert me
+                  {!isPro && (
+                    <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  )}
+                </button>
                 {/* Deals-only filter (Pro) */}
                 <button
                   onClick={() => (isPro ? setDealsOnly((v) => !v) : startCheckout())}
@@ -278,6 +298,16 @@ export function SearchExperience() {
                 </div>
               </div>
             </div>
+
+            {showAlert && isPro && (
+              <AlertForm
+                origin={origin}
+                destination={destination}
+                cabin={cabin}
+                departDate={departDate}
+                onClose={() => setShowAlert(false)}
+              />
+            )}
 
             {sortedDeals.length === 0 ? (
               <div className="rounded-2xl border border-white/10 bg-ink-800/40 px-4 py-10 text-center">
