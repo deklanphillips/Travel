@@ -67,6 +67,9 @@ export class TravelpayoutsProvider implements FlightProvider {
       one_way: params.returnDate ? "false" : "true",
       sorting: "price",
       limit: params.destination ? "30" : "50",
+      // Travelpayouts only distinguishes economy (0) vs business (1).
+      trip_class:
+        params.cabin === "business" || params.cabin === "first" ? "1" : "0",
       token: this.token,
     });
     // Omit destination for "anywhere" searches (cheapest from origin to all).
