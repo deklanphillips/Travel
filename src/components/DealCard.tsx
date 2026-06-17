@@ -73,6 +73,14 @@ export function DealCard({
 
   const showDeal = dealFlag?.isDeal;
 
+  // Cash-vs-points comparison for award cards: the cheapest cash fare on the
+  // route, and the value of the redemption in cents per mile.
+  const compareCash = deal.cashPrice === null ? deal.cashCompare ?? null : null;
+  const centsPerMile =
+    deal.award && compareCash !== null && deal.award.miles > 0
+      ? ((compareCash - deal.award.fees) / deal.award.miles) * 100
+      : null;
+
   return (
     <article
       className={`group relative animate-fade-up rounded-2xl border bg-ink-800/60 p-4 transition hover:bg-ink-800 sm:p-5 ${
@@ -195,7 +203,18 @@ export function DealCard({
           <PriceTile
             kind="cash"
             label="Cash"
-            value={deal.cashPrice !== null ? formatUSD(deal.cashPrice) : "—"}
+            value={
+              deal.cashPrice !== null
+                ? formatUSD(deal.cashPrice)
+                : compareCash !== null
+                  ? `~${formatUSD(compareCash)}`
+                  : "—"
+            }
+            sub={
+              deal.cashPrice === null && compareCash !== null
+                ? "cheapest cash"
+                : undefined
+            }
             href={deal.cashBookingUrl}
             bookOn={first.carrier}
             highlight={
@@ -212,7 +231,13 @@ export function DealCard({
                 ? `${formatMiles(deal.award.miles)} mi`
                 : "—"
             }
-            sub={deal.award ? `+ ${formatUSD(deal.award.fees)} fees` : undefined}
+            sub={
+              deal.award
+                ? `+ ${formatUSD(deal.award.fees)} fees${
+                    centsPerMile !== null ? ` · ${centsPerMile.toFixed(1)}¢/mi` : ""
+                  }`
+                : undefined
+            }
             href={deal.awardBookingUrl}
             bookOn={deal.award ? deal.award.program : undefined}
             highlight={

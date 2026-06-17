@@ -37,6 +37,7 @@ export interface Deal {
   origin: string;
   destination: string;
   returnDate?: string | null; // set for round-trip results (YYYY-MM-DD)
+  cashCompare?: number | null; // cheapest cash fare on the route (for award cards)
   segments: FlightSegment[];
   stops: number;
   durationMinutes: number;

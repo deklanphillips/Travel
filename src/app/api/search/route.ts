@@ -85,9 +85,24 @@ export async function GET(request: Request) {
     // Merge in award (miles) availability if an award source is configured.
     const awardDeals = await fetchAwardDeals(parsed);
 
+    // Attach the cheapest cash fare per destination to each award deal, so the
+    // UI can show the cash-vs-points value (cents per mile).
+    const cheapestCashByDest = new Map<string, number>();
+    for (const d of cashDeals) {
+      if (d.cashPrice === null) continue;
+      const cur = cheapestCashByDest.get(d.destination);
+      if (cur === undefined || d.cashPrice < cur) {
+        cheapestCashByDest.set(d.destination, d.cashPrice);
+      }
+    }
+    const awardWithCompare = awardDeals.map((d) => ({
+      ...d,
+      cashCompare: cheapestCashByDest.get(d.destination) ?? null,
+    }));
+
     const response: SearchResponse = {
       params: parsed,
-      deals: [...cashDeals, ...awardDeals],
+      deals: [...cashDeals, ...awardWithCompare],
       // Generic label only — never expose the underlying data provider's name.
       provider: provider.name === "mock" ? "mock" : "live",
       generatedAt: new Date().toISOString(),
