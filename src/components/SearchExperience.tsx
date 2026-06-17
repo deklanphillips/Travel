@@ -47,11 +47,27 @@ export function SearchExperience() {
   const locked = !isPro;
   const [origin, setOrigin] = useState("JFK");
   const [destination, setDestination] = useState("LHR");
+  const [anywhere, setAnywhere] = useState(false);
+  const [tripType, setTripType] = useState<"oneway" | "roundtrip">("oneway");
+  const [dateMode, setDateMode] = useState<"exact" | "month">("exact");
   const [departDate, setDepartDate] = useState(todayPlus(30));
+  const [returnDate, setReturnDate] = useState(todayPlus(37));
   const [passengers, setPassengers] = useState(1);
   const [cabin, setCabin] = useState<CabinClass>("business");
   const [alliance, setAlliance] = useState<AllianceFilter>("any");
   const [airline, setAirline] = useState("");
+
+  // Switch the date inputs between exact day (YYYY-MM-DD) and whole month (YYYY-MM).
+  function changeDateMode(mode: "exact" | "month") {
+    setDateMode(mode);
+    if (mode === "month") {
+      setDepartDate((d) => d.slice(0, 7));
+      setReturnDate((d) => d.slice(0, 7));
+    } else {
+      setDepartDate((d) => (d.length === 7 ? `${d}-15` : d));
+      setReturnDate((d) => (d.length === 7 ? `${d}-15` : d));
+    }
+  }
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,12 +100,13 @@ export function SearchExperience() {
     try {
       const qs = new URLSearchParams({
         origin,
-        destination,
+        destination: anywhere ? "" : destination,
         departDate,
         passengers: String(passengers),
         cabin,
         alliance,
       });
+      if (tripType === "roundtrip") qs.set("returnDate", returnDate);
       if (airline) qs.set("airline", airline);
       const res = await fetch(`/api/search?${qs.toString()}`);
       const json = await res.json();
@@ -117,24 +134,109 @@ export function SearchExperience() {
         onSubmit={runSearch}
         className="rounded-3xl border border-white/10 bg-ink-800/70 p-4 shadow-2xl shadow-black/40 backdrop-blur sm:p-6"
       >
+        {/* Trip type / date mode / anywhere toggles */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="flex rounded-full bg-white/5 p-1 text-xs font-medium">
+            {(["oneway", "roundtrip"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTripType(t)}
+                className={`rounded-full px-3 py-1.5 transition ${
+                  tripType === t ? "bg-white text-ink-900" : "text-slate-300 hover:text-white"
+                }`}
+              >
+                {t === "oneway" ? "One-way" : "Round-trip"}
+              </button>
+            ))}
+          </div>
+          <div className="flex rounded-full bg-white/5 p-1 text-xs font-medium">
+            {(["exact", "month"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => changeDateMode(m)}
+                className={`rounded-full px-3 py-1.5 transition ${
+                  dateMode === m ? "bg-white text-ink-900" : "text-slate-300 hover:text-white"
+                }`}
+              >
+                {m === "exact" ? "Exact dates" : "Whole month"}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setAnywhere((v) => !v)}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+              anywhere ? "bg-brand-500 text-white" : "bg-white/5 text-slate-300 hover:text-white"
+            }`}
+          >
+            🌍 Anywhere
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <AirportInput label="From" value={origin} onChange={setOrigin} />
-          <AirportInput label="To" value={destination} onChange={setDestination} />
+
+          {anywhere ? (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
+                To
+              </label>
+              <div className="flex h-[50px] items-center rounded-xl border border-brand-400/40 bg-brand-500/10 px-3.5 text-sm font-medium text-brand-200">
+                🌍 Anywhere
+              </div>
+            </div>
+          ) : (
+            <AirportInput label="To" value={destination} onChange={setDestination} />
+          )}
 
           <div>
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
-              Depart
+              {dateMode === "month" ? "Depart month" : "Depart"}
             </label>
             <input
-              type="date"
+              type={dateMode === "month" ? "month" : "date"}
               value={departDate}
-              min={todayPlus(0)}
               onChange={(e) => setDepartDate(e.target.value)}
               className="w-full rounded-xl border border-white/10 bg-ink-800 px-3.5 py-3 text-sm text-white transition hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-500 [color-scheme:dark]"
             />
           </div>
 
-          <div>
+          {tripType === "roundtrip" ? (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
+                {dateMode === "month" ? "Return month" : "Return"}
+              </label>
+              <input
+                type={dateMode === "month" ? "month" : "date"}
+                value={returnDate}
+                onChange={(e) => setReturnDate(e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-ink-800 px-3.5 py-3 text-sm text-white transition hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-500 [color-scheme:dark]"
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
+                Passengers
+              </label>
+              <select
+                value={passengers}
+                onChange={(e) => setPassengers(Number(e.target.value))}
+                className="w-full rounded-xl border border-white/10 bg-ink-800 px-3.5 py-3 text-sm text-white transition hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {n} {n === 1 ? "passenger" : "passengers"}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {tripType === "roundtrip" && (
+          <div className="mt-3 sm:w-1/2 lg:w-1/4">
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
               Passengers
             </label>
@@ -150,7 +252,7 @@ export function SearchExperience() {
               ))}
             </select>
           </div>
-        </div>
+        )}
 
         <div className="mt-4 flex flex-wrap gap-2">
           {CABINS.map((c) => (

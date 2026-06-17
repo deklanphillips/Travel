@@ -61,15 +61,16 @@ export class TravelpayoutsProvider implements FlightProvider {
   async search(params: SearchParams): Promise<Deal[]> {
     const qs = new URLSearchParams({
       origin: params.origin,
-      destination: params.destination,
       departure_at: params.departDate,
       currency: this.currency,
       market: this.market,
       one_way: params.returnDate ? "false" : "true",
       sorting: "price",
-      limit: "30",
+      limit: params.destination ? "30" : "50",
       token: this.token,
     });
+    // Omit destination for "anywhere" searches (cheapest from origin to all).
+    if (params.destination) qs.set("destination", params.destination);
     if (params.returnDate) qs.set("return_at", params.returnDate);
 
     const res = await fetch(`${API}?${qs.toString()}`, {
@@ -97,9 +98,12 @@ export class TravelpayoutsProvider implements FlightProvider {
       new Date(item.departure_at).getTime() + outboundMinutes * 60_000,
     ).toISOString();
 
+    const fromCode = item.origin_airport || item.origin;
+    const toCode = item.destination_airport || item.destination;
+
     const segment: FlightSegment = {
-      from: item.origin_airport || item.origin,
-      to: item.destination_airport || item.destination,
+      from: fromCode,
+      to: toCode,
       departTime: item.departure_at,
       arriveTime,
       carrier: carrierName,
@@ -107,10 +111,18 @@ export class TravelpayoutsProvider implements FlightProvider {
       flightNumber: String(item.flight_number ?? ""),
     };
 
+    // Each result carries its own destination/date — important for "anywhere"
+    // and whole-month searches where they vary per result.
+    const bookingParams = {
+      ...params,
+      destination: toCode,
+      departDate: item.departure_at.slice(0, 10),
+    };
+
     return {
       id: `tp-${item.origin}-${item.destination}-${item.departure_at}-${code}-${item.flight_number}`,
-      origin: params.origin,
-      destination: params.destination,
+      origin: fromCode,
+      destination: toCode,
       segments: [segment],
       stops: item.transfers ?? 0,
       durationMinutes: outboundMinutes,
@@ -119,7 +131,7 @@ export class TravelpayoutsProvider implements FlightProvider {
       award: null,
       // Link straight to the operating airline's own booking site (pre-filled
       // with the searched route/date) rather than the Aviasales redirect.
-      cashBookingUrl: bookingLinksFor(code, params).cash,
+      cashBookingUrl: bookingLinksFor(code, bookingParams).cash,
       awardBookingUrl: null,
       seatsLeft: null,
       provider: this.name,

@@ -92,13 +92,20 @@ export function DealCard({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         {/* Itinerary */}
         <div className="flex-1">
-          <div className="mb-1 flex items-center gap-2">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
             <ProgramBadge code={first.carrierCode} />
             <span className="text-sm font-medium text-slate-200">
               {first.carrier}
             </span>
             <span className="text-xs text-slate-500">
               {CABIN_LABELS[deal.cabin]}
+            </span>
+            <span className="text-xs text-slate-500">·</span>
+            <span className="text-xs font-medium text-slate-400">
+              {new Date(first.departTime).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })}
             </span>
           </div>
 

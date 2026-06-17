@@ -71,25 +71,32 @@ export class MockProvider implements FlightProvider {
   name = "mock";
 
   async search(params: SearchParams): Promise<Deal[]> {
-    const { origin, destination, departDate, cabin, passengers } = params;
+    const { origin, departDate, cabin, passengers } = params;
+    const roundTrip = Boolean(params.returnDate);
+    const anywhere = params.destination === "";
+    const tripMult = roundTrip ? 1.9 : 1;
+
     const seed = hashString(
-      `${origin}-${destination}-${departDate}-${cabin}-${params.alliance ?? "any"}-${params.airline ?? ""}`,
+      `${origin}-${params.destination}-${departDate}-${cabin}-${params.alliance ?? "any"}-${params.airline ?? ""}-${params.returnDate ?? ""}`,
     );
     const rng = makeRng(seed);
-    const distance = distanceProxy(origin, destination);
     const cabinMult = CABIN_MULTIPLIER[cabin];
     const pool = carrierPool(params);
 
-    const count = 6 + Math.floor(rng() * 5); // 6–10 results
+    const count = anywhere ? 12 : 6 + Math.floor(rng() * 5);
     const deals: Deal[] = [];
 
     for (let i = 0; i < count; i++) {
       const carrier = pool[Math.floor(rng() * pool.length)];
+      // For "anywhere", pick a varied destination per result.
+      const destination = anywhere ? pickAnywhere(origin, rng) : params.destination;
+      const distance = distanceProxy(origin, destination);
       const stops = rng() < 0.55 ? 0 : rng() < 0.85 ? 1 : 2;
 
       const flightMinutes = Math.round(distance / 8 + stops * 90 + rng() * 120);
+      const dayDate = resolveDate(departDate, rng); // concrete day (handles whole-month)
       const departHour = 6 + Math.floor(rng() * 14);
-      const departIso = `${departDate}T${String(departHour).padStart(2, "0")}:${
+      const departIso = `${dayDate}T${String(departHour).padStart(2, "0")}:${
         rng() < 0.5 ? "05" : "40"
       }:00.000Z`;
 
@@ -103,32 +110,35 @@ export class MockProvider implements FlightProvider {
         rng,
       );
 
-      // Cash pricing.
-      const baseCash = (distance * 0.12 + 60) * cabinMult;
+      // Cash pricing (× trip multiplier for round trips).
+      const baseCash = (distance * 0.12 + 60) * cabinMult * tripMult;
       const cashJitter = 0.8 + rng() * 0.5;
       const cashPrice =
         rng() < 0.92 ? Math.round(baseCash * cashJitter * passengers) : null;
 
       // Award pricing — miles roughly track distance + cabin, with program variance.
       const hasAward = rng() < 0.8;
-      const baseMiles = (distance * 4.5 + 8000) * cabinMult;
+      const baseMiles = (distance * 4.5 + 8000) * cabinMult * tripMult;
       const milesJitter = 0.7 + rng() * 0.7;
       const award = hasAward
         ? {
             program: carrier.program,
             programCode: carrier.programCode,
             miles: Math.round((baseMiles * milesJitter * passengers) / 500) * 500,
-            fees: Math.round((20 + rng() * 180) * cabinMult),
+            fees: Math.round((20 + rng() * 180) * cabinMult * tripMult),
           }
         : null;
 
-      // Guarantee at least one of cash / award exists.
       const finalCash = cashPrice ?? (award ? null : Math.round(baseCash * passengers));
 
-      const links = bookingLinksFor(carrier.code, params);
+      const links = bookingLinksFor(carrier.code, {
+        ...params,
+        destination,
+        departDate: dayDate,
+      });
 
       deals.push({
-        id: `${carrier.code}-${i}-${seed}`,
+        id: `${carrier.code}-${destination}-${i}-${seed}`,
         origin,
         destination,
         segments,
@@ -146,6 +156,29 @@ export class MockProvider implements FlightProvider {
 
     return deals;
   }
+}
+
+// Popular destinations for "anywhere" searches.
+const ANYWHERE_DESTS = [
+  "LHR", "CDG", "FCO", "BCN", "MAD", "AMS", "LIS", "ATH", "CUN", "MIA",
+  "LAX", "SFO", "NRT", "HND", "DXB", "BKK", "MEX", "GRU", "SYD", "HNL",
+  "YYZ", "SIN", "IST", "BOS", "SEA",
+];
+
+function pickAnywhere(origin: string, rng: () => number): string {
+  for (let tries = 0; tries < 5; tries++) {
+    const d = ANYWHERE_DESTS[Math.floor(rng() * ANYWHERE_DESTS.length)];
+    if (d !== origin) return d;
+  }
+  return "LHR";
+}
+
+// Resolves a search date that may be an exact day (YYYY-MM-DD) or a whole
+// month (YYYY-MM) into a concrete day.
+function resolveDate(departDate: string, rng: () => number): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(departDate)) return departDate;
+  const day = 1 + Math.floor(rng() * 27);
+  return `${departDate}-${String(day).padStart(2, "0")}`;
 }
 
 function buildSegments(

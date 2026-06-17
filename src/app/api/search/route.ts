@@ -35,14 +35,19 @@ function parseParams(searchParams: URLSearchParams): SearchParams | { error: str
   const alliance = (searchParams.get("alliance") ?? "any") as AllianceFilter;
   const airlineParam = (searchParams.get("airline") ?? "").toUpperCase().trim();
 
+  // Dates may be an exact day (YYYY-MM-DD) or a whole month (YYYY-MM).
+  const DATE_RE = /^\d{4}-\d{2}(-\d{2})?$/;
+  // Destination may be blank — that means "anywhere" from the origin.
+  const anywhere = destination === "" || destination === "ANY";
+
   if (!/^[A-Z]{3}$/.test(origin)) return { error: "Invalid origin airport code." };
-  if (!/^[A-Z]{3}$/.test(destination))
+  if (!anywhere && !/^[A-Z]{3}$/.test(destination))
     return { error: "Invalid destination airport code." };
-  if (origin === destination)
+  if (!anywhere && origin === destination)
     return { error: "Origin and destination must differ." };
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(departDate))
+  if (!DATE_RE.test(departDate))
     return { error: "Invalid departure date." };
-  if (returnDate && !/^\d{4}-\d{2}-\d{2}$/.test(returnDate))
+  if (returnDate && !DATE_RE.test(returnDate))
     return { error: "Invalid return date." };
   if (!Number.isFinite(passengers) || passengers < 1 || passengers > 9)
     return { error: "Passengers must be between 1 and 9." };
@@ -54,7 +59,7 @@ function parseParams(searchParams: URLSearchParams): SearchParams | { error: str
 
   return {
     origin,
-    destination,
+    destination: anywhere ? "" : destination,
     departDate,
     returnDate: returnDate || undefined,
     passengers,
@@ -108,6 +113,8 @@ export async function GET(request: Request) {
 async function fetchAwardDeals(params: SearchParams): Promise<Deal[]> {
   const source = getAwardSource();
   if (!source) return [];
+  // Award lookups need a concrete destination + day (not anywhere/whole-month).
+  if (!params.destination || !/^\d{4}-\d{2}-\d{2}$/.test(params.departDate)) return [];
 
   try {
     const availability = await source.search({
