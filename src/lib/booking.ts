@@ -164,6 +164,25 @@ function virginAustralia(p: BookingParams, award: boolean): string {
   return `https://book.virginaustralia.com/dx/VADX/#/flight-selection?${qs.toString()}`;
 }
 
+// Aeromexico — itinerary string is ORIGIN_DEST_DATE, with a dot-joined second
+// leg for round trips. Cash uses the en-us booking flow; award (Premier Points)
+// uses the consumer reserva flow.
+function aeromexico(p: BookingParams, award: boolean): string {
+  const outbound = `${p.origin}_${p.destination}_${p.departDate}`;
+  const itinerary = p.returnDate
+    ? `${outbound}.${p.destination}_${p.origin}_${p.returnDate}`
+    : outbound;
+  const qs = new URLSearchParams({
+    itinerary,
+    leg: "1",
+    travelers: `A${p.passengers}_C0_I0_PH0_PC0`,
+  });
+  const base = award
+    ? "https://www.aeromexico.com/es-mx/reserva/opciones"
+    : "https://www.aeromexico.com/bf/en-us/book/options";
+  return `${base}?${qs.toString()}`;
+}
+
 const BUILDERS: Record<
   string,
   { cash: (p: BookingParams) => string; award: (p: BookingParams) => string }
@@ -172,6 +191,7 @@ const BUILDERS: Record<
   UA: { cash: (p) => united(p, false), award: (p) => united(p, true) },
   DL: { cash: (p) => delta(p, false), award: (p) => delta(p, true) },
   B6: { cash: (p) => jetblue(p, false), award: (p) => jetblue(p, true) },
+  AM: { cash: (p) => aeromexico(p, false), award: (p) => aeromexico(p, true) },
   VA: {
     cash: (p) => virginAustralia(p, false),
     award: (p) => virginAustralia(p, true),
