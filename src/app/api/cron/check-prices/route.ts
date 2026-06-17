@@ -77,12 +77,15 @@ export async function GET(request: Request) {
         values (${a.origin}, ${a.destination}, ${a.cabin}, ${departDate}, ${min})
       `;
 
-      const hitsTarget = a.target_price !== null && min <= a.target_price;
-      const dropped =
-        a.target_price === null &&
-        (a.last_notified_price === null || min < a.last_notified_price);
+      // Only notify on a NEW low — never re-email the same or higher price.
+      // This makes frequent checks safe (no spam): a target alert fires when
+      // the fare is at/below target AND lower than the last price we emailed.
+      const meetsTarget = a.target_price === null || min <= a.target_price;
+      const isNewLow =
+        a.last_notified_price === null || min < a.last_notified_price;
+      const shouldNotify = meetsTarget && isNewLow;
 
-      if (hitsTarget || dropped) {
+      if (shouldNotify) {
         await sendEmail({
           to: a.email,
           subject: `✈️ ${a.origin}→${a.destination} dropped to ${formatUSD(min)}`,
@@ -97,7 +100,7 @@ export async function GET(request: Request) {
         target: a.target_price,
         lastNotified: a.last_notified_price,
         found: min,
-        notified: hitsTarget || dropped,
+        notified: shouldNotify,
       });
     } catch (err) {
       console.error("[cron] alert check failed", a.id, err);
