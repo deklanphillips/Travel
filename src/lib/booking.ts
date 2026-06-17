@@ -1,5 +1,5 @@
 import type { CabinClass } from "./types";
-import { getAirline } from "./alliances";
+import airlineSites from "@/data/airline-sites.json";
 
 // Builds deep links that pre-fill the airline's own search page with the
 // route/date/cabin — the same approach (and the same URL formats) seats.aero
@@ -177,52 +177,17 @@ const BUILDERS: Record<
     award: (p) => virginAustralia(p, true),
   },
   AC: {
-    cash: (p) =>
-      withHints("https://www.aircanada.com/us/en/aco/home/book.html", p, false),
+    cash: () => "https://www.aircanada.com/us/en/aco/home/book.html",
     award: (p) => airCanadaAward(p),
   },
 };
 
-/* --- best-effort fallbacks (booking page; some ignore params) ------------- */
+/* --- airline website map (homepage, no pre-fill) -------------------------- */
+// Direct links to each airline's own site for carriers without an exact
+// pre-fill template. Never a third party. Extend src/data/airline-sites.json
+// (or add a BUILDERS template) to cover more airlines / pre-fill them.
 
-const SITES: Record<string, { cash: string; award: string }> = {
-  LH: { cash: "https://www.lufthansa.com/us/en/flight-search", award: "https://www.miles-and-more.com/us/en/spend/flights.html" },
-  NH: { cash: "https://www.ana.co.jp/en/us/", award: "https://www.ana.co.jp/en/us/amc/international-flight-awards/" },
-  SQ: { cash: "https://www.singaporeair.com/en_UK/us/home", award: "https://www.singaporeair.com/en_UK/us/ppsclub-krisflyer/use-miles/" },
-  BA: { cash: "https://www.britishairways.com/travel/home/public/en_us", award: "https://www.britishairways.com/travel/redeem/execclub/_gf/en_us" },
-  QR: { cash: "https://www.qatarairways.com/en-us/homepage.html", award: "https://www.qatarairways.com/en/Privilege-Club/spend-avios.html" },
-  CX: { cash: "https://www.cathaypacific.com/cx/en_US.html", award: "https://www.cathaypacific.com/cx/en_US/asia-miles.html" },
-  AF: { cash: "https://www.airfrance.us/", award: "https://www.airfrance.us/loyalty-program/flying-blue" },
-  KL: { cash: "https://www.klm.com/", award: "https://www.klm.com/flying-blue/spend-miles" },
-  EK: { cash: "https://www.emirates.com/us/english/", award: "https://www.emirates.com/us/english/skywards/" },
-};
-
-function withHints(base: string, p: BookingParams, award: boolean): string {
-  try {
-    const u = new URL(base);
-    u.searchParams.set("from", p.origin);
-    u.searchParams.set("to", p.destination);
-    u.searchParams.set("depart", p.departDate);
-    if (p.returnDate) u.searchParams.set("return", p.returnDate);
-    u.searchParams.set("adults", String(p.passengers));
-    if (award) u.searchParams.set("award", "true");
-    return u.toString();
-  } catch {
-    return base;
-  }
-}
-
-// Universal fallback for carriers without an exact template: a Kayak search
-// pre-filled with route + dates and filtered to the specific airline. Unlike a
-// bare meta-search, this shows live prices and is one click from the airline.
-function kayak(carrierCode: string, p: BookingParams): string {
-  const depart = p.departDate.slice(0, 10);
-  const ret = p.returnDate ? `/${p.returnDate.slice(0, 10)}` : "";
-  const path = `${p.origin}-${p.destination}/${depart}${ret}`;
-  const qs = new URLSearchParams({ sort: "price_a" });
-  if (carrierCode) qs.set("fs", `airlines=${carrierCode}`);
-  return `https://www.kayak.com/flights/${path}?${qs.toString()}`;
-}
+const AIRLINE_SITES = airlineSites as Record<string, string>;
 
 export function bookingLinksFor(
   carrierCode: string,
@@ -230,20 +195,18 @@ export function bookingLinksFor(
 ): BookingLinks {
   const code = carrierCode.toUpperCase();
 
+  // 1. Exact, pre-filled airline search where we have the format.
   const builder = BUILDERS[code];
   if (builder) {
     return { cash: builder.cash(p), award: builder.award(p) };
   }
 
-  const site = SITES[code];
+  // 2. Otherwise the airline's own homepage (no pre-fill), never a 3rd party.
+  const site = AIRLINE_SITES[code];
   if (site) {
-    return {
-      cash: withHints(site.cash, p, false),
-      award: withHints(site.award, p, true),
-    };
+    return { cash: site, award: site };
   }
 
-  // Long-tail carriers: pre-filled, airline-filtered Kayak search (live prices).
-  const fallback = kayak(code, p);
-  return { cash: fallback, award: fallback };
+  // 3. Unknown carrier: no link (price still shows; tile isn't clickable).
+  return { cash: "", award: "" };
 }
