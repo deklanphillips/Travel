@@ -65,3 +65,43 @@ export function sortDeals(deals: Deal[], key: SortKey): Deal[] {
       return copy.sort((a, b) => dealValueScore(a) - dealValueScore(b));
   }
 }
+
+export interface DealFlag {
+  isDeal: boolean;
+  savingsPct: number; // 0..1, how far below the route's typical price
+}
+
+// How far below the typical (median) fare counts as a "deal".
+const DEAL_THRESHOLD = 0.18;
+
+// Flags which results are deals by comparing each fare to the median fare for
+// this search. A lightweight, per-search heuristic — Phase B will replace/
+// augment this with real price-history tracking (drops over time).
+export function flagDeals(deals: Deal[]): Map<string, DealFlag> {
+  const flags = new Map<string, DealFlag>();
+  const prices = deals
+    .map((d) => d.cashPrice)
+    .filter((p): p is number => p !== null)
+    .sort((a, b) => a - b);
+
+  // Need a few data points for a meaningful baseline.
+  if (prices.length < 4) return flags;
+  const median = prices[Math.floor(prices.length / 2)];
+  if (median <= 0) return flags;
+
+  for (const deal of deals) {
+    if (deal.cashPrice === null) continue;
+    const savingsPct = (median - deal.cashPrice) / median;
+    flags.set(deal.id, {
+      isDeal: savingsPct >= DEAL_THRESHOLD,
+      savingsPct: Math.max(0, savingsPct),
+    });
+  }
+  return flags;
+}
+
+export function countDeals(flags: Map<string, DealFlag>): number {
+  let n = 0;
+  for (const f of flags.values()) if (f.isDeal) n++;
+  return n;
+}

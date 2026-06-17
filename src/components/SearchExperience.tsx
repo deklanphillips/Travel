@@ -4,7 +4,13 @@ import { useMemo, useState } from "react";
 import { AirportInput } from "./AirportInput";
 import { AirlineInput } from "./AirlineInput";
 import { DealCard } from "./DealCard";
-import { CABIN_LABELS, sortDeals, type SortKey } from "@/lib/format";
+import {
+  CABIN_LABELS,
+  countDeals,
+  flagDeals,
+  sortDeals,
+  type SortKey,
+} from "@/lib/format";
 import { useEntitlement } from "@/lib/entitlement";
 import type {
   AllianceFilter,
@@ -50,11 +56,23 @@ export function SearchExperience() {
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [sort, setSort] = useState<SortKey>("best");
+  const [dealsOnly, setDealsOnly] = useState(false);
+
+  // Which results are deals (below the route's typical price).
+  const dealFlags = useMemo(
+    () => (response ? flagDeals(response.deals) : new Map()),
+    [response],
+  );
+  const dealCount = useMemo(() => countDeals(dealFlags), [dealFlags]);
 
   const sortedDeals: Deal[] = useMemo(() => {
     if (!response) return [];
-    return sortDeals(response.deals, sort);
-  }, [response, sort]);
+    const sorted = sortDeals(response.deals, sort);
+    if (dealsOnly && isPro) {
+      return sorted.filter((d) => dealFlags.get(d.id)?.isDeal);
+    }
+    return sorted;
+  }, [response, sort, dealsOnly, isPro, dealFlags]);
 
   async function runSearch(e?: React.FormEvent) {
     e?.preventDefault();
@@ -215,27 +233,49 @@ export function SearchExperience() {
                 <span className="font-semibold text-white">
                   {response.deals.length}
                 </span>{" "}
-                deals · {origin} → {destination}
+                flights · {origin} → {destination}
                 {response.provider === "mock" && (
                   <span className="ml-2 rounded bg-amber-400/10 px-2 py-0.5 text-[11px] font-medium text-amber-400">
                     sample data
                   </span>
                 )}
               </p>
-              <div className="flex items-center gap-1 rounded-full bg-white/5 p-1 text-xs">
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.key}
-                    onClick={() => setSort(opt.key)}
-                    className={`rounded-full px-3 py-1.5 font-medium transition ${
-                      sort === opt.key
-                        ? "bg-white text-ink-900"
-                        : "text-slate-300 hover:text-white"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Deals-only filter (Pro) */}
+                <button
+                  onClick={() => (isPro ? setDealsOnly((v) => !v) : startCheckout())}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                    dealsOnly && isPro
+                      ? "bg-emerald-500 text-white"
+                      : "bg-white/5 text-slate-200 hover:bg-white/10"
+                  }`}
+                >
+                  🔥 Deals{dealCount ? ` (${dealCount})` : ""}
+                  {!isPro && (
+                    <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  )}
+                </button>
+                <div className="flex items-center gap-1 rounded-full bg-white/5 p-1 text-xs">
+                  {SORT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => setSort(opt.key)}
+                      className={`rounded-full px-3 py-1.5 font-medium transition ${
+                        sort === opt.key
+                          ? "bg-white text-ink-900"
+                          : "text-slate-300 hover:text-white"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -251,32 +291,27 @@ export function SearchExperience() {
               </div>
             ) : (
               <>
-                {locked && (
-                  <div className="mb-4 flex flex-col items-start gap-3 rounded-2xl border border-brand-400/30 bg-gradient-to-r from-brand-500/10 to-purple-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+                {locked && dealCount > 0 && (
+                  <div className="mb-4 flex flex-col items-start gap-3 rounded-2xl border border-emerald-400/30 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500/20 text-brand-200">
-                        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path
-                            fillRule="evenodd"
-                            d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-2xl">
+                        🔥
                       </span>
                       <div>
                         <p className="text-sm font-semibold text-white">
-                          Prices are hidden
+                          {dealCount} deal{dealCount > 1 ? "s" : ""} found on this route
                         </p>
                         <p className="text-sm text-slate-400">
-                          Go Pro to reveal every fare and book in one tap.
+                          Go Pro to see which flights are priced below normal — and
+                          get alerted when prices drop.
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={startCheckout}
-                      className="w-full shrink-0 rounded-xl bg-gradient-to-r from-brand-500 to-purple-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/20 transition hover:opacity-95 sm:w-auto"
+                      className="w-full shrink-0 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition hover:opacity-95 sm:w-auto"
                     >
-                      Unlock all prices
+                      Unlock deals
                     </button>
                   </div>
                 )}
@@ -287,7 +322,9 @@ export function SearchExperience() {
                       key={deal.id}
                       deal={deal}
                       isBest={sort === "best" && i === 0}
-                      locked={locked}
+                      dealFlag={dealFlags.get(deal.id)}
+                      proLocked={locked}
+                      onUpgrade={startCheckout}
                     />
                   ))}
                 </div>

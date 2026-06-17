@@ -6,6 +6,7 @@ import {
   formatMiles,
   formatTime,
   formatUSD,
+  type DealFlag,
 } from "@/lib/format";
 
 function ProgramBadge({ code }: { code: string }) {
@@ -16,27 +17,77 @@ function ProgramBadge({ code }: { code: string }) {
   );
 }
 
+// A Pro-gated badge marking a fare as a deal. Free users see a locked teaser;
+// Pro users see how far below the typical price it is.
+function DealBadge({
+  flag,
+  proLocked,
+  onUpgrade,
+}: {
+  flag: DealFlag;
+  proLocked: boolean;
+  onUpgrade?: () => void;
+}) {
+  if (proLocked) {
+    return (
+      <button
+        type="button"
+        onClick={onUpgrade}
+        className="absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-2.5 py-0.5 text-[11px] font-semibold text-white shadow"
+      >
+        <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+          <path
+            fillRule="evenodd"
+            d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
+            clipRule="evenodd"
+          />
+        </svg>
+        Deal · Pro
+      </button>
+    );
+  }
+  return (
+    <span className="absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-2.5 py-0.5 text-[11px] font-semibold text-white shadow">
+      🔥 Deal · {Math.round(flag.savingsPct * 100)}% below typical
+    </span>
+  );
+}
+
 export function DealCard({
   deal,
   isBest,
-  locked,
+  dealFlag,
+  proLocked,
+  onUpgrade,
 }: {
   deal: Deal;
   isBest?: boolean;
-  locked?: boolean;
+  dealFlag?: DealFlag;
+  proLocked?: boolean;
+  onUpgrade?: () => void;
 }) {
   const first = deal.segments[0];
   const last = deal.segments[deal.segments.length - 1];
   const stopsLabel =
     deal.stops === 0 ? "Nonstop" : `${deal.stops} stop${deal.stops > 1 ? "s" : ""}`;
 
+  const showDeal = dealFlag?.isDeal;
+
   return (
-    <article className="group relative animate-fade-up rounded-2xl border border-white/10 bg-ink-800/60 p-4 transition hover:border-brand-500/40 hover:bg-ink-800 sm:p-5">
-      {isBest && (
+    <article
+      className={`group relative animate-fade-up rounded-2xl border bg-ink-800/60 p-4 transition hover:bg-ink-800 sm:p-5 ${
+        showDeal && !proLocked
+          ? "border-emerald-400/40 hover:border-emerald-400/60"
+          : "border-white/10 hover:border-brand-500/40"
+      }`}
+    >
+      {showDeal ? (
+        <DealBadge flag={dealFlag} proLocked={!!proLocked} onUpgrade={onUpgrade} />
+      ) : isBest ? (
         <span className="absolute -top-2.5 left-4 rounded-full bg-gradient-to-r from-brand-500 to-purple-500 px-2.5 py-0.5 text-[11px] font-semibold text-white shadow">
           Best value
         </span>
-      )}
+      ) : null}
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         {/* Itinerary */}
@@ -104,7 +155,6 @@ export function DealCard({
             value={deal.cashPrice !== null ? formatUSD(deal.cashPrice) : "—"}
             href={deal.cashBookingUrl}
             bookOn={first.carrier}
-            locked={locked}
             highlight={
               deal.cashPrice !== null &&
               (deal.award === null ||
@@ -122,7 +172,6 @@ export function DealCard({
             sub={deal.award ? `+ ${formatUSD(deal.award.fees)} fees` : undefined}
             href={deal.awardBookingUrl}
             bookOn={deal.award ? deal.award.program : undefined}
-            locked={locked}
             highlight={
               deal.award !== null &&
               (deal.cashPrice === null ||
@@ -144,7 +193,6 @@ function PriceTile({
   bookOn,
   sub,
   highlight,
-  locked,
 }: {
   kind: "cash" | "miles";
   label: string;
@@ -153,10 +201,8 @@ function PriceTile({
   bookOn?: string;
   sub?: string;
   highlight?: boolean;
-  locked?: boolean;
 }) {
-  const hasValue = value !== "—";
-  const clickable = Boolean(href) && !locked;
+  const clickable = Boolean(href);
 
   const inner = (
     <>
@@ -165,31 +211,12 @@ function PriceTile({
       </span>
       <span
         className={`text-base font-bold ${
-          !hasValue ? "text-slate-600" : "text-white"
-        } ${locked && hasValue ? "select-none blur-[6px]" : ""}`}
-        aria-hidden={locked && hasValue ? true : undefined}
+          value === "—" ? "text-slate-600" : "text-white"
+        }`}
       >
-        {locked && hasValue ? "$888" : value}
+        {value}
       </span>
-      {sub && (
-        <span
-          className={`text-[11px] text-slate-500 ${locked ? "select-none blur-[5px]" : ""}`}
-        >
-          {sub}
-        </span>
-      )}
-      {locked && hasValue && (
-        <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-brand-300">
-          <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fillRule="evenodd"
-              d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Pro
-        </span>
-      )}
+      {sub && <span className="text-[11px] text-slate-500">{sub}</span>}
       {clickable && bookOn && (
         <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-brand-300 opacity-0 transition group-hover:opacity-100">
           Book on {bookOn}
