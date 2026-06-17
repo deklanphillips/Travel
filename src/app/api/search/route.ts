@@ -134,7 +134,9 @@ async function fetchAwardDeals(params: SearchParams): Promise<Deal[]> {
 
 function awardToDeal(a: AwardAvailability, params: SearchParams): Deal {
   const carrier = getAirline(a.carrierCode)?.name || a.carrierCode;
-  const award = bookingLinksFor(a.carrierCode, { ...params, cabin: a.cabin }).award;
+  // Award booking goes to the PROGRAM you redeem with (e.g. United miles ->
+  // united.com), even when another carrier operates the flight.
+  const award = bookingLinksFor(a.programCode, { ...params, cabin: a.cabin }).award;
   return {
     id: `award-${a.source}-${a.programCode}-${a.date}-${a.cabin}-${a.miles}`,
     origin: a.origin,

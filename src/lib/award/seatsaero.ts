@@ -41,6 +41,14 @@ const PROGRAMS: Record<string, { name: string; code: string }> = {
   singapore: { name: "KrisFlyer", code: "SQ" },
   qatar: { name: "Privilege Club", code: "QR" },
   ana: { name: "ANA Mileage Club", code: "NH" },
+  british: { name: "Avios (BA)", code: "BA" },
+  lufthansa: { name: "Miles & More", code: "LH" },
+  turkish: { name: "Miles&Smiles", code: "TK" },
+  saudia: { name: "AlFursan", code: "SV" },
+  sas: { name: "EuroBonus", code: "SK" },
+  finnair: { name: "Finnair Plus", code: "AY" },
+  ethiopian: { name: "ShebaMiles", code: "ET" },
+  frontier: { name: "Frontier Miles", code: "F9" },
 };
 
 interface RawRoute {
@@ -102,7 +110,12 @@ export class SeatsAeroSource implements AwardSource {
       const airlines = String(r[`${key}Airlines`] ?? "");
       const carrierCode = airlines.split(",")[0]?.trim().slice(0, 2) || "";
 
-      const prog = PROGRAMS[row.Source] ?? { name: row.Source, code: carrierCode };
+      const prog =
+        PROGRAMS[row.Source] ??
+        {
+          name: row.Source.charAt(0).toUpperCase() + row.Source.slice(1),
+          code: carrierCode,
+        };
 
       out.push({
         program: prog.name,
