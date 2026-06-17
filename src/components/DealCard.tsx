@@ -81,6 +81,12 @@ export function DealCard({
       ? ((compareCash - deal.award.fees) / deal.award.miles) * 100
       : null;
 
+  // Award-only cards lead with the redemption PROGRAM (you book there), with
+  // the operating carrier shown separately — they're often different airlines.
+  const isAwardOnly = Boolean(deal.awardAvailabilityOnly && deal.award);
+  const headlineCode = isAwardOnly ? deal.award!.programCode : first.carrierCode;
+  const headlineName = isAwardOnly ? deal.award!.program : first.carrier;
+
   return (
     <article
       className={`group relative animate-fade-up rounded-2xl border bg-ink-800/60 p-4 transition hover:bg-ink-800 sm:p-5 ${
@@ -101,13 +107,18 @@ export function DealCard({
         {/* Itinerary */}
         <div className="flex-1">
           <div className="mb-1 flex flex-wrap items-center gap-2">
-            <ProgramBadge code={first.carrierCode} />
+            <ProgramBadge code={headlineCode} />
             <span className="text-sm font-medium text-slate-200">
-              {first.carrier}
+              {headlineName}
             </span>
             <span className="text-xs text-slate-500">
               {CABIN_LABELS[deal.cabin]}
             </span>
+            {isAwardOnly && first.carrier !== headlineName && (
+              <span className="text-xs text-slate-500">
+                · operated by {first.carrier}
+              </span>
+            )}
             <span className="text-xs text-slate-500">·</span>
             <span className="text-xs font-medium text-slate-400">
               {new Date(first.departTime).toLocaleDateString("en-US", {
