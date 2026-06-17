@@ -130,6 +130,7 @@ export class SeatsAeroSource implements AwardSource {
         carrierCode: carrierCode || prog.code,
         lastSeen: row.UpdatedAt,
         source: this.name,
+        availabilityId: row.ID,
       });
     }
 

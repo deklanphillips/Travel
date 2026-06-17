@@ -174,9 +174,11 @@ async function fetchAwardDeals(params: SearchParams): Promise<Deal[]> {
 
 function awardToDeal(a: AwardAvailability, params: SearchParams): Deal {
   const carrier = getAirline(a.carrierCode)?.name || a.carrierCode;
-  // Award booking goes to the PROGRAM you redeem with (e.g. United miles ->
-  // united.com), even when another carrier operates the flight.
-  const award = bookingLinksFor(a.programCode, { ...params, cabin: a.cabin }).award;
+  // Prefer seats.aero's own pre-filled award deep-link (fetched on click via
+  // /trips); fall back to our program homepage link if no availability id.
+  const award = a.availabilityId
+    ? `/api/award/book?id=${encodeURIComponent(a.availabilityId)}`
+    : bookingLinksFor(a.programCode, { ...params, cabin: a.cabin }).award;
   return {
     id: `award-${a.source}-${a.programCode}-${a.date}-${a.cabin}-${a.miles}`,
     origin: a.origin,

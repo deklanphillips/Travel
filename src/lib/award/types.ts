@@ -24,6 +24,7 @@ export interface AwardAvailability {
   carrierCode: string; // operating/marketing carrier IATA
   lastSeen: string; // ISO timestamp this availability was observed
   source: string; // which scraper produced it
+  availabilityId?: string; // source availability ID (for fetching booking links)
 }
 
 // A single loyalty program's award-search scraper. Each program implements this;
