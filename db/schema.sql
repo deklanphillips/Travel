@@ -17,9 +17,10 @@ create table if not exists alerts (
   id uuid primary key default gen_random_uuid(),
   email text not null,
   origin text not null,
-  destination text not null,
+  destination text,                -- null/empty = "anywhere from origin"
   cabin text not null default 'economy',
-  depart_date date not null,
+  depart_date text not null,       -- exact day (YYYY-MM-DD) or month (YYYY-MM)
+  return_date text,                -- set for round-trip alerts
   target_price integer,            -- USD; null = "any drop"
   last_notified_price integer,     -- last price we emailed about
   active boolean not null default true,
@@ -33,7 +34,7 @@ create table if not exists price_history (
   origin text not null,
   destination text not null,
   cabin text not null,
-  depart_date date not null,
+  depart_date text not null,
   price integer not null,          -- USD
   carrier text,
   observed_at timestamptz not null default now()

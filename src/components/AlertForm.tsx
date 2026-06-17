@@ -5,13 +5,21 @@ import type { CabinClass } from "@/lib/types";
 
 interface Props {
   origin: string;
-  destination: string;
+  destination: string; // "" = anywhere
   cabin: CabinClass;
   departDate: string;
+  returnDate?: string;
   onClose: () => void;
 }
 
-export function AlertForm({ origin, destination, cabin, departDate, onClose }: Props) {
+export function AlertForm({
+  origin,
+  destination,
+  cabin,
+  departDate,
+  returnDate,
+  onClose,
+}: Props) {
   const [email, setEmail] = useState("");
   const [target, setTarget] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
@@ -31,6 +39,7 @@ export function AlertForm({ origin, destination, cabin, departDate, onClose }: P
           destination,
           cabin,
           departDate,
+          returnDate: returnDate ?? null,
           targetPrice: target || null,
         }),
       });
@@ -47,7 +56,8 @@ export function AlertForm({ origin, destination, cabin, departDate, onClose }: P
     <div className="mb-4 rounded-2xl border border-brand-400/30 bg-ink-800/70 p-4">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold text-white">
-          🔔 Alert me on {origin} → {destination}
+          🔔 Alert me on {origin} → {destination || "Anywhere"}
+          {returnDate ? " (round trip)" : ""}
         </p>
         <button
           onClick={onClose}

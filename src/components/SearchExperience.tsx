@@ -404,9 +404,10 @@ export function SearchExperience() {
             {showAlert && isPro && (
               <AlertForm
                 origin={origin}
-                destination={destination}
+                destination={anywhere ? "" : destination}
                 cabin={cabin}
                 departDate={departDate}
+                returnDate={tripType === "roundtrip" ? returnDate : undefined}
                 onClose={() => setShowAlert(false)}
               />
             )}
