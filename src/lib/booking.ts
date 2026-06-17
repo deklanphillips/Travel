@@ -212,9 +212,16 @@ function withHints(base: string, p: BookingParams, award: boolean): string {
   }
 }
 
-function googleFlights(p: BookingParams): string {
-  const q = `Flights from ${p.origin} to ${p.destination} on ${p.departDate}`;
-  return `https://www.google.com/travel/flights?q=${encodeURIComponent(q)}`;
+// Universal fallback for carriers without an exact template: a Kayak search
+// pre-filled with route + dates and filtered to the specific airline. Unlike a
+// bare meta-search, this shows live prices and is one click from the airline.
+function kayak(carrierCode: string, p: BookingParams): string {
+  const depart = p.departDate.slice(0, 10);
+  const ret = p.returnDate ? `/${p.returnDate.slice(0, 10)}` : "";
+  const path = `${p.origin}-${p.destination}/${depart}${ret}`;
+  const qs = new URLSearchParams({ sort: "price_a" });
+  if (carrierCode) qs.set("fs", `airlines=${carrierCode}`);
+  return `https://www.kayak.com/flights/${path}?${qs.toString()}`;
 }
 
 export function bookingLinksFor(
@@ -236,9 +243,7 @@ export function bookingLinksFor(
     };
   }
 
-  const airline = getAirline(code);
-  const awardSearch = `https://www.google.com/search?q=${encodeURIComponent(
-    `${airline?.program ?? carrierCode} award booking ${p.origin} to ${p.destination}`,
-  )}`;
-  return { cash: googleFlights(p), award: awardSearch };
+  // Long-tail carriers: pre-filled, airline-filtered Kayak search (live prices).
+  const fallback = kayak(code, p);
+  return { cash: fallback, award: fallback };
 }
