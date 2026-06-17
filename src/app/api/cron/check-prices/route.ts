@@ -40,6 +40,7 @@ export async function GET(request: Request) {
   const provider = getProvider();
   let checked = 0;
   let notified = 0;
+  const results: Array<Record<string, unknown>> = [];
 
   for (const a of alerts) {
     try {
@@ -58,7 +59,15 @@ export async function GET(request: Request) {
       const prices = deals
         .map((d) => d.cashPrice)
         .filter((p): p is number => p !== null);
-      if (!prices.length) continue;
+      if (!prices.length) {
+        results.push({
+          route: `${a.origin}-${a.destination}`,
+          target: a.target_price,
+          found: null,
+          note: "no price",
+        });
+        continue;
+      }
 
       const min = Math.min(...prices);
       checked++;
@@ -82,12 +91,21 @@ export async function GET(request: Request) {
         await sql`update alerts set last_notified_price = ${min} where id = ${a.id}`;
         notified++;
       }
+
+      results.push({
+        route: `${a.origin}-${a.destination}`,
+        target: a.target_price,
+        lastNotified: a.last_notified_price,
+        found: min,
+        notified: hitsTarget || dropped,
+      });
     } catch (err) {
       console.error("[cron] alert check failed", a.id, err);
+      results.push({ route: `${a.origin}-${a.destination}`, error: true });
     }
   }
 
-  return NextResponse.json({ checked, notified, total: alerts.length });
+  return NextResponse.json({ checked, notified, total: alerts.length, results });
 }
 
 function alertHtml(
