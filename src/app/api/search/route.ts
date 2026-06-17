@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { getProvider } from "@/lib/providers";
 import { getAirline } from "@/lib/alliances";
+import { getAwardSource } from "@/lib/award";
+import { bookingLinksFor } from "@/lib/booking";
+import type { AwardAvailability } from "@/lib/award/types";
 import type {
   AllianceFilter,
   CabinClass,
+  Deal,
   SearchParams,
   SearchResponse,
 } from "@/lib/types";
@@ -71,10 +75,14 @@ export async function GET(request: Request) {
   const provider = getProvider();
 
   try {
-    const deals = await provider.search(parsed);
+    const cashDeals = await provider.search(parsed);
+
+    // Merge in award (miles) availability if an award source is configured.
+    const awardDeals = await fetchAwardDeals(parsed);
+
     const response: SearchResponse = {
       params: parsed,
-      deals,
+      deals: [...cashDeals, ...awardDeals],
       // Generic label only — never expose the underlying data provider's name.
       provider: provider.name === "mock" ? "mock" : "live",
       generatedAt: new Date().toISOString(),
@@ -93,4 +101,62 @@ export async function GET(request: Request) {
       { status: 502 },
     );
   }
+}
+
+// Queries the configured award source and turns availability into award-only
+// deals (no specific flight/time — they represent bookable award space).
+async function fetchAwardDeals(params: SearchParams): Promise<Deal[]> {
+  const source = getAwardSource();
+  if (!source) return [];
+
+  try {
+    const availability = await source.search({
+      origin: params.origin,
+      destination: params.destination,
+      date: params.departDate,
+      cabin: params.cabin,
+      passengers: params.passengers,
+    });
+    return availability.map((a) => awardToDeal(a, params));
+  } catch (err) {
+    // Award data is supplementary — never fail the whole search on it.
+    console.error("[award] source error", err);
+    return [];
+  }
+}
+
+function awardToDeal(a: AwardAvailability, params: SearchParams): Deal {
+  const carrier = getAirline(a.carrierCode)?.name || a.carrierCode;
+  const award = bookingLinksFor(a.carrierCode, { ...params, cabin: a.cabin }).award;
+  return {
+    id: `award-${a.source}-${a.programCode}-${a.date}-${a.cabin}-${a.miles}`,
+    origin: a.origin,
+    destination: a.destination,
+    segments: [
+      {
+        from: a.origin,
+        to: a.destination,
+        departTime: `${a.date}T12:00:00`,
+        arriveTime: `${a.date}T12:00:00`,
+        carrier,
+        carrierCode: a.carrierCode,
+        flightNumber: "",
+      },
+    ],
+    stops: 0,
+    durationMinutes: 0,
+    cabin: a.cabin,
+    cashPrice: null,
+    award: {
+      program: a.program,
+      programCode: a.programCode,
+      miles: a.miles,
+      fees: a.fees,
+    },
+    cashBookingUrl: null,
+    awardBookingUrl: award,
+    seatsLeft: a.seats,
+    provider: "seatsaero",
+    awardAvailabilityOnly: true,
+  };
 }

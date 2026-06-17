@@ -102,43 +102,68 @@ export function DealCard({
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="text-center">
-              <div className="text-lg font-semibold text-white">
-                {formatTime(first.departTime)}
+          {deal.awardAvailabilityOnly ? (
+            <div className="flex items-center gap-3">
+              <div className="text-center">
+                <div className="text-lg font-semibold text-white">{deal.origin}</div>
               </div>
-              <div className="text-xs text-slate-500">{deal.origin}</div>
+              <div className="flex flex-1 flex-col items-center px-1">
+                <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300">
+                  Award space
+                </span>
+                <div className="my-1 h-px w-full bg-gradient-to-r from-slate-600 to-slate-600" />
+                <span className="text-[11px] text-slate-500">
+                  {new Date(first.departTime).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-semibold text-white">
+                  {deal.destination}
+                </div>
+              </div>
             </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="text-center">
+                <div className="text-lg font-semibold text-white">
+                  {formatTime(first.departTime)}
+                </div>
+                <div className="text-xs text-slate-500">{deal.origin}</div>
+              </div>
 
-            <div className="flex flex-1 flex-col items-center px-1">
-              <span className="text-[11px] text-slate-500">
-                {formatDuration(deal.durationMinutes)}
-              </span>
-              <div className="my-1 flex w-full items-center">
-                <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-                <span className="h-px flex-1 bg-gradient-to-r from-slate-600 to-slate-600" />
-                <svg
-                  className="h-3.5 w-3.5 -rotate-90 text-slate-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                </svg>
-                <span className="h-px flex-1 bg-gradient-to-r from-slate-600 to-slate-600" />
-                <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
+              <div className="flex flex-1 flex-col items-center px-1">
+                <span className="text-[11px] text-slate-500">
+                  {formatDuration(deal.durationMinutes)}
+                </span>
+                <div className="my-1 flex w-full items-center">
+                  <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
+                  <span className="h-px flex-1 bg-gradient-to-r from-slate-600 to-slate-600" />
+                  <svg
+                    className="h-3.5 w-3.5 -rotate-90 text-slate-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                  </svg>
+                  <span className="h-px flex-1 bg-gradient-to-r from-slate-600 to-slate-600" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
+                </div>
+                <span className="text-[11px] font-medium text-slate-400">
+                  {stopsLabel}
+                </span>
               </div>
-              <span className="text-[11px] font-medium text-slate-400">
-                {stopsLabel}
-              </span>
-            </div>
 
-            <div className="text-center">
-              <div className="text-lg font-semibold text-white">
-                {formatTime(last.arriveTime)}
+              <div className="text-center">
+                <div className="text-lg font-semibold text-white">
+                  {formatTime(last.arriveTime)}
+                </div>
+                <div className="text-xs text-slate-500">{deal.destination}</div>
               </div>
-              <div className="text-xs text-slate-500">{deal.destination}</div>
             </div>
-          </div>
+          )}
 
           {deal.seatsLeft !== null && deal.seatsLeft <= 4 && (
             <p className="mt-2 text-xs font-medium text-amber-400">

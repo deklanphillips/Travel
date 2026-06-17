@@ -46,6 +46,7 @@ export interface Deal {
   awardBookingUrl: string | null; // deep link to airline award booking, null if no award
   seatsLeft: number | null;
   provider: string; // which data source produced this deal
+  awardAvailabilityOnly?: boolean; // true for award-space rows (no specific flight/time)
 }
 
 export interface SearchResponse {
