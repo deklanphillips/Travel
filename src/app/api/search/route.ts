@@ -100,9 +100,34 @@ export async function GET(request: Request) {
       cashCompare: cheapestCashByDest.get(d.destination) ?? null,
     }));
 
+    // Merge award availability onto a matching cash flight (same operating
+    // carrier + cabin) so a single card can show BOTH cash and miles. Awards
+    // with no matching cash flight stay as their own award-only cards.
+    const usedAward = new Set<string>();
+    for (const cash of cashDeals) {
+      if (cash.award) continue;
+      const carrier = cash.segments[0]?.carrierCode;
+      if (!carrier) continue;
+      let best: (typeof awardWithCompare)[number] | undefined;
+      for (const a of awardWithCompare) {
+        if (usedAward.has(a.id)) continue;
+        if (a.cabin !== cash.cabin) continue;
+        if (a.segments[0]?.carrierCode !== carrier) continue;
+        if (!best || (a.award?.miles ?? Infinity) < (best.award?.miles ?? Infinity)) {
+          best = a;
+        }
+      }
+      if (best?.award) {
+        cash.award = best.award;
+        cash.awardBookingUrl = best.awardBookingUrl;
+        usedAward.add(best.id);
+      }
+    }
+    const remainingAward = awardWithCompare.filter((a) => !usedAward.has(a.id));
+
     const response: SearchResponse = {
       params: parsed,
-      deals: [...cashDeals, ...awardWithCompare],
+      deals: [...cashDeals, ...remainingAward],
       // Generic label only — never expose the underlying data provider's name.
       provider: provider.name === "mock" ? "mock" : "live",
       generatedAt: new Date().toISOString(),

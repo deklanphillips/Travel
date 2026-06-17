@@ -73,9 +73,9 @@ export function DealCard({
 
   const showDeal = dealFlag?.isDeal;
 
-  // Cash-vs-points comparison for award cards: the cheapest cash fare on the
-  // route, and the value of the redemption in cents per mile.
-  const compareCash = deal.cashPrice === null ? deal.cashCompare ?? null : null;
+  // Cash-vs-points value: use this card's own cash price when present (merged
+  // card), otherwise the cheapest cash fare on the route (award-only card).
+  const compareCash = deal.cashPrice ?? deal.cashCompare ?? null;
   const centsPerMile =
     deal.award && compareCash !== null && deal.award.miles > 0
       ? ((compareCash - deal.award.fees) / deal.award.miles) * 100

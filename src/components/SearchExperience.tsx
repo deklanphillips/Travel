@@ -85,12 +85,13 @@ export function SearchExperience() {
   const dealCount = useMemo(() => countDeals(dealFlags), [dealFlags]);
 
   // Counts so the Cash/Miles toggle can show how many of each are available.
+  // Presence-based: a merged card (cash + miles) counts in BOTH.
   const cashCount = useMemo(
-    () => (response?.deals ?? []).filter((d) => !d.awardAvailabilityOnly).length,
+    () => (response?.deals ?? []).filter((d) => d.cashPrice !== null).length,
     [response],
   );
   const milesCount = useMemo(
-    () => (response?.deals ?? []).filter((d) => d.awardAvailabilityOnly).length,
+    () => (response?.deals ?? []).filter((d) => d.award !== null).length,
     [response],
   );
 
@@ -98,8 +99,8 @@ export function SearchExperience() {
     if (!response) return [];
     let list = response.deals;
     // Filter by pay type so miles deals aren't buried under cheap cash fares.
-    if (payType === "cash") list = list.filter((d) => !d.awardAvailabilityOnly);
-    else if (payType === "miles") list = list.filter((d) => d.awardAvailabilityOnly);
+    if (payType === "cash") list = list.filter((d) => d.cashPrice !== null);
+    else if (payType === "miles") list = list.filter((d) => d.award !== null);
     const sorted = sortDeals(list, payType === "miles" ? "miles" : sort);
     if (dealsOnly && isPro) {
       return sorted.filter((d) => dealFlags.get(d.id)?.isDeal);
