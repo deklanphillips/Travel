@@ -43,7 +43,11 @@ export async function GET(request: Request) {
 
   for (const a of alerts) {
     try {
-      const departDate = String(a.depart_date).slice(0, 10);
+      // depart_date may come back as a string or a Date depending on the driver.
+      const departDate =
+        a.depart_date instanceof Date
+          ? a.depart_date.toISOString().slice(0, 10)
+          : String(a.depart_date).slice(0, 10);
       const deals = await provider.search({
         origin: a.origin,
         destination: a.destination,
