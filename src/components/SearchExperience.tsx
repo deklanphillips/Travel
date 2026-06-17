@@ -74,6 +74,7 @@ export function SearchExperience() {
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [sort, setSort] = useState<SortKey>("best");
   const [dealsOnly, setDealsOnly] = useState(false);
+  const [payType, setPayType] = useState<"all" | "cash" | "miles">("all");
   const [showAlert, setShowAlert] = useState(false);
 
   // Which results are deals (below the route's typical price).
@@ -83,14 +84,28 @@ export function SearchExperience() {
   );
   const dealCount = useMemo(() => countDeals(dealFlags), [dealFlags]);
 
+  // Counts so the Cash/Miles toggle can show how many of each are available.
+  const cashCount = useMemo(
+    () => (response?.deals ?? []).filter((d) => !d.awardAvailabilityOnly).length,
+    [response],
+  );
+  const milesCount = useMemo(
+    () => (response?.deals ?? []).filter((d) => d.awardAvailabilityOnly).length,
+    [response],
+  );
+
   const sortedDeals: Deal[] = useMemo(() => {
     if (!response) return [];
-    const sorted = sortDeals(response.deals, sort);
+    let list = response.deals;
+    // Filter by pay type so miles deals aren't buried under cheap cash fares.
+    if (payType === "cash") list = list.filter((d) => !d.awardAvailabilityOnly);
+    else if (payType === "miles") list = list.filter((d) => d.awardAvailabilityOnly);
+    const sorted = sortDeals(list, payType === "miles" ? "miles" : sort);
     if (dealsOnly && isPro) {
       return sorted.filter((d) => dealFlags.get(d.id)?.isDeal);
     }
     return sorted;
-  }, [response, sort, dealsOnly, isPro, dealFlags]);
+  }, [response, sort, dealsOnly, isPro, dealFlags, payType]);
 
   async function runSearch(e?: React.FormEvent) {
     e?.preventDefault();
@@ -383,6 +398,27 @@ export function SearchExperience() {
                     </svg>
                   )}
                 </button>
+                {milesCount > 0 && (
+                  <div className="flex items-center gap-1 rounded-full bg-white/5 p-1 text-xs">
+                    {([
+                      ["all", `All (${cashCount + milesCount})`],
+                      ["cash", `Cash (${cashCount})`],
+                      ["miles", `Miles (${milesCount})`],
+                    ] as const).map(([key, label]) => (
+                      <button
+                        key={key}
+                        onClick={() => setPayType(key)}
+                        className={`rounded-full px-3 py-1.5 font-medium transition ${
+                          payType === key
+                            ? "bg-white text-ink-900"
+                            : "text-slate-300 hover:text-white"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="flex items-center gap-1 rounded-full bg-white/5 p-1 text-xs">
                   {SORT_OPTIONS.map((opt) => (
                     <button
