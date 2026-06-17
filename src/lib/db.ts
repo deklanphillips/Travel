@@ -8,7 +8,10 @@ import { neon } from "@neondatabase/serverless";
 
 const url = process.env.DATABASE_URL;
 
-export const sql = url ? neon(url) : null;
+// `fetchOptions: { cache: "no-store" }` is essential: without it, Next.js caches
+// the neon query responses and serves stale data (e.g. the alerts list never
+// reflects newly-added rows).
+export const sql = url ? neon(url, { fetchOptions: { cache: "no-store" } }) : null;
 
 export function hasDb(): boolean {
   return sql !== null;
