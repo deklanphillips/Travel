@@ -137,10 +137,13 @@ export class MockProvider implements FlightProvider {
         departDate: dayDate,
       });
 
+      const returnDay = params.returnDate ? resolveDate(params.returnDate, rng) : null;
+
       deals.push({
         id: `${carrier.code}-${destination}-${i}-${seed}`,
         origin,
         destination,
+        returnDate: returnDay,
         segments,
         stops,
         durationMinutes: flightMinutes,

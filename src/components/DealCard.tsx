@@ -106,7 +106,18 @@ export function DealCard({
                 month: "short",
                 day: "numeric",
               })}
+              {deal.returnDate
+                ? ` → ${new Date(`${deal.returnDate}T00:00:00`).toLocaleDateString(
+                    "en-US",
+                    { month: "short", day: "numeric" },
+                  )}`
+                : ""}
             </span>
+            {deal.returnDate && (
+              <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
+                Round trip
+              </span>
+            )}
           </div>
 
           {deal.awardAvailabilityOnly ? (

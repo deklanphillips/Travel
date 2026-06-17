@@ -123,6 +123,7 @@ export class TravelpayoutsProvider implements FlightProvider {
       id: `tp-${item.origin}-${item.destination}-${item.departure_at}-${code}-${item.flight_number}`,
       origin: fromCode,
       destination: toCode,
+      returnDate: item.return_at ? item.return_at.slice(0, 10) : null,
       segments: [segment],
       stops: item.transfers ?? 0,
       durationMinutes: outboundMinutes,

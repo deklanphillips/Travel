@@ -36,6 +36,7 @@ export interface Deal {
   id: string;
   origin: string;
   destination: string;
+  returnDate?: string | null; // set for round-trip results (YYYY-MM-DD)
   segments: FlightSegment[];
   stops: number;
   durationMinutes: number;
