@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     origin: string;
     destination: string;
     cabin: string;
-    depart_date: string;
+    depart_date: string | Date;
     target_price: number | null;
     last_notified_price: number | null;
   }>;
