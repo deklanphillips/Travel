@@ -1,37 +1,96 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useEntitlement } from "@/lib/entitlement";
+import { useTheme, type Theme } from "@/lib/theme";
+
+const THEMES: Theme[] = ["light", "dark", "system"];
 
 export function AccountButton() {
   const { isPro, loading, startCheckout, cancel } = useEntitlement();
+  const { theme, setTheme } = useTheme();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
 
   if (loading) return <div className="h-9 w-24" />;
 
-  if (isPro) {
-    return (
-      <div className="flex items-center gap-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500/20 to-purple-500/20 px-3 py-1.5 text-sm font-semibold text-brand-200 ring-1 ring-inset ring-brand-400/30">
-          <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.447a1 1 0 00-.364 1.118l1.287 3.957c.3.922-.755 1.688-1.54 1.118l-3.367-2.447a1 1 0 00-1.176 0l-3.367 2.447c-.784.57-1.838-.196-1.539-1.118l1.286-3.957a1 1 0 00-.363-1.118L2.075 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z" />
-          </svg>
-          Pro
-        </span>
-        <button
-          onClick={cancel}
-          className="text-sm font-medium text-slate-400 transition hover:text-white"
-        >
-          Sign out
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <button
-      onClick={startCheckout}
-      className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink-900 shadow-lg shadow-brand-500/10 transition hover:bg-slate-100"
-    >
-      Go Pro
-    </button>
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-white/10"
+      >
+        {isPro && (
+          <span className="rounded bg-brand-500 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
+            Pro
+          </span>
+        )}
+        Account
+        <span className="text-[10px]">▾</span>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-white/10 bg-ink-800 p-2 shadow-xl shadow-black/40">
+          <div className="px-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-slate-500">
+            Theme
+          </div>
+          <div className="mb-2 flex gap-1 rounded-lg bg-white/5 p-1">
+            {THEMES.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTheme(t)}
+                className={`flex-1 rounded-md px-2 py-1 text-xs font-medium capitalize transition ${
+                  theme === t
+                    ? "bg-white text-ink-900"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          <div className="border-t border-white/5 pt-2">
+            {isPro ? (
+              <>
+                <div className="flex items-center justify-between px-2 py-1 text-sm text-slate-300">
+                  <span>Plan</span>
+                  <span className="font-semibold text-brand-300">Pro</span>
+                </div>
+                <button
+                  onClick={() => {
+                    cancel();
+                    setOpen(false);
+                  }}
+                  className="w-full rounded-md px-2 py-1.5 text-left text-sm text-slate-400 transition hover:bg-white/5 hover:text-white"
+                >
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  startCheckout();
+                  setOpen(false);
+                }}
+                className="w-full rounded-md bg-white px-2 py-1.5 text-center text-sm font-semibold text-ink-900 transition hover:bg-slate-100"
+              >
+                Go Pro
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

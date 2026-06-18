@@ -22,9 +22,9 @@ const config: Config = {
           900: "#1e3a8a",
         },
         ink: {
-          900: "#0b1120",
-          800: "#0f172a",
-          700: "#1e293b",
+          900: "rgb(var(--ink-900) / <alpha-value>)",
+          800: "rgb(var(--ink-800) / <alpha-value>)",
+          700: "rgb(var(--ink-700) / <alpha-value>)",
         },
       },
       fontFamily: {

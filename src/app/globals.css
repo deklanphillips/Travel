@@ -2,12 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+:root,
+[data-theme="dark"] {
   color-scheme: dark;
+  --ink-900: 11 17 32;
+  --ink-800: 15 23 42;
+  --ink-700: 30 41 59;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --ink-900: 248 250 252; /* page background */
+  --ink-800: 255 255 255; /* cards / surfaces */
+  --ink-700: 226 232 240; /* lighter surface */
 }
 
 body {
   @apply bg-ink-900 text-slate-100 antialiased;
+}
+
+/* --- Light theme overrides (app is dark-first; flip the heavy tokens) --- */
+[data-theme="light"] body {
+  @apply text-slate-900;
+}
+[data-theme="light"] .text-white {
+  color: #0f172a;
+}
+[data-theme="light"] .text-slate-100 {
+  color: #0f172a;
+}
+[data-theme="light"] .text-slate-200 {
+  color: #1e293b;
+}
+[data-theme="light"] .text-slate-300 {
+  color: #334155;
+}
+[data-theme="light"] .text-slate-400 {
+  color: #475569;
+}
+[data-theme="light"] .bg-white\/5 {
+  background-color: rgba(15, 23, 42, 0.04);
+}
+[data-theme="light"] .bg-white\/10 {
+  background-color: rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .hover\:bg-white\/5:hover {
+  background-color: rgba(15, 23, 42, 0.05);
+}
+[data-theme="light"] .hover\:bg-white\/10:hover {
+  background-color: rgba(15, 23, 42, 0.08);
+}
+[data-theme="light"] .border-white\/5 {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+[data-theme="light"] .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.12);
+}
+[data-theme="light"] .ring-white\/5 {
+  --tw-ring-color: rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .ring-white\/10 {
+  --tw-ring-color: rgba(15, 23, 42, 0.12);
 }
 
 /* Subtle aurora background for the hero. */
