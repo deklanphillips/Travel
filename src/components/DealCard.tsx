@@ -1,5 +1,6 @@
 import type { Deal } from "@/lib/types";
 import { AwardFlights } from "./AwardFlights";
+import { CARD_STYLE, cardsForProgram } from "@/data/transferPartners";
 import {
   CABIN_LABELS,
   dealValueScore,
@@ -87,6 +88,7 @@ export function DealCard({
   const isAwardOnly = Boolean(deal.awardAvailabilityOnly && deal.award);
   const headlineCode = isAwardOnly ? deal.award!.programCode : first.carrierCode;
   const headlineName = isAwardOnly ? deal.award!.program : first.carrier;
+  const transferCards = deal.award ? cardsForProgram(deal.award.programCode) : [];
 
   return (
     <article
@@ -139,6 +141,22 @@ export function DealCard({
               </span>
             )}
           </div>
+
+          {deal.award && transferCards.length > 0 && (
+            <div className="mb-2 flex flex-wrap items-center gap-1">
+              <span className="text-[10px] uppercase tracking-wide text-slate-500">
+                Transfer from
+              </span>
+              {transferCards.map((c) => (
+                <span
+                  key={c}
+                  className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${CARD_STYLE[c]}`}
+                >
+                  {c}
+                </span>
+              ))}
+            </div>
+          )}
 
           {deal.awardAvailabilityOnly ? (
             <div className="flex items-center gap-3">

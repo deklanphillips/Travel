@@ -13,6 +13,7 @@ import {
   type SortKey,
 } from "@/lib/format";
 import { useEntitlement } from "@/lib/entitlement";
+import { ALL_CARDS, cardsForProgram, type CardName } from "@/data/transferPartners";
 import type {
   AllianceFilter,
   CabinClass,
@@ -75,6 +76,7 @@ export function SearchExperience() {
   const [sort, setSort] = useState<SortKey>("best");
   const [dealsOnly, setDealsOnly] = useState(false);
   const [payType, setPayType] = useState<"all" | "cash" | "miles">("all");
+  const [cardFilter, setCardFilter] = useState<"all" | CardName>("all");
   const [showAlert, setShowAlert] = useState(false);
 
   // Which results are deals (below the route's typical price).
@@ -101,12 +103,20 @@ export function SearchExperience() {
     // Filter by pay type so miles deals aren't buried under cheap cash fares.
     if (payType === "cash") list = list.filter((d) => d.cashPrice !== null);
     else if (payType === "miles") list = list.filter((d) => d.award !== null);
+    // "I have <card> points" — keep cash, plus award space that card transfers to.
+    if (cardFilter !== "all") {
+      list = list.filter(
+        (d) =>
+          d.cashPrice !== null ||
+          (d.award && cardsForProgram(d.award.programCode).includes(cardFilter)),
+      );
+    }
     const sorted = sortDeals(list, payType === "miles" ? "miles" : sort);
     if (dealsOnly && isPro) {
       return sorted.filter((d) => dealFlags.get(d.id)?.isDeal);
     }
     return sorted;
-  }, [response, sort, dealsOnly, isPro, dealFlags, payType]);
+  }, [response, sort, dealsOnly, isPro, dealFlags, payType, cardFilter]);
 
   async function runSearch(e?: React.FormEvent) {
     e?.preventDefault();
@@ -399,6 +409,21 @@ export function SearchExperience() {
                     </svg>
                   )}
                 </button>
+                {milesCount > 0 && (
+                  <select
+                    value={cardFilter}
+                    onChange={(e) => setCardFilter(e.target.value as "all" | CardName)}
+                    className="rounded-full border border-white/10 bg-ink-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    title="Show award space your card transfers to"
+                  >
+                    <option value="all">All points</option>
+                    {ALL_CARDS.map((c) => (
+                      <option key={c} value={c}>
+                        {c} points
+                      </option>
+                    ))}
+                  </select>
+                )}
                 {milesCount > 0 && (
                   <div className="flex items-center gap-1 rounded-full bg-white/5 p-1 text-xs">
                     {([
