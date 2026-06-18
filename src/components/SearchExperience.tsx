@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AirportMultiInput } from "./AirportMultiInput";
 import { AirlineInput } from "./AirlineInput";
@@ -49,7 +49,6 @@ export function SearchExperience() {
   const locked = !isPro;
   const [origins, setOrigins] = useState<string[]>(["JFK"]);
   const [destinations, setDestinations] = useState<string[]>(["LHR"]);
-  const [anywhere, setAnywhere] = useState(false);
   const [tripType, setTripType] = useState<"oneway" | "roundtrip">("oneway");
   const [dateMode, setDateMode] = useState<"exact" | "month">("exact");
   const [departDate, setDepartDate] = useState(todayPlus(30));
@@ -127,7 +126,7 @@ export function SearchExperience() {
     try {
       const qs = new URLSearchParams({
         origin: origins.join(","),
-        destination: anywhere ? "" : destinations.join(","),
+        destination: destinations.join(","),
         departDate,
         passengers: String(passengers),
         cabin,
@@ -153,6 +152,13 @@ export function SearchExperience() {
     // Reset the specific-airline filter when the alliance scope changes.
     setAirline("");
   }
+
+  // Refine controls (class/alliance/airline) live with the results — changing
+  // one re-runs the search, but only once an initial search has been made.
+  useEffect(() => {
+    if (response) runSearch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cabin, alliance, airline]);
 
   return (
     <div id="search" className="mx-auto w-full max-w-5xl px-4 sm:px-6">
@@ -211,32 +217,11 @@ export function SearchExperience() {
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => setAnywhere((v) => !v)}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-              anywhere ? "bg-brand-500 text-white" : "bg-white/5 text-slate-300 hover:text-white"
-            }`}
-          >
-            🌍 Anywhere
-          </button>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <AirportMultiInput label="From" values={origins} onChange={setOrigins} />
-
-          {anywhere ? (
-            <div>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
-                To
-              </label>
-              <div className="flex h-[50px] items-center rounded-xl border border-brand-400/40 bg-brand-500/10 px-3.5 text-sm font-medium text-brand-200">
-                🌍 Anywhere
-              </div>
-            </div>
-          ) : (
-            <AirportMultiInput label="To" values={destinations} onChange={setDestinations} />
-          )}
+          <AirportMultiInput label="To" values={destinations} onChange={setDestinations} />
 
           <div>
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
@@ -301,52 +286,6 @@ export function SearchExperience() {
           </div>
         )}
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {CABINS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setCabin(c)}
-              className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
-                cabin === c
-                  ? "bg-white text-ink-900"
-                  : "bg-white/5 text-slate-300 hover:bg-white/10"
-              }`}
-            >
-              {CABIN_LABELS[c]}
-            </button>
-          ))}
-        </div>
-
-        {/* Alliance + airline filters */}
-        <div className="mt-4 flex flex-col gap-3 border-t border-white/5 pt-4 sm:flex-row sm:items-end sm:gap-4">
-          <div className="flex-1">
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
-              Alliance
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {ALLIANCES.map((a) => (
-                <button
-                  key={a.key}
-                  type="button"
-                  onClick={() => changeAlliance(a.key)}
-                  className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                    alliance === a.key
-                      ? "bg-brand-500 text-white"
-                      : "bg-white/5 text-slate-300 hover:bg-white/10"
-                  }`}
-                >
-                  {a.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="sm:w-60">
-            <AirlineInput value={airline} onChange={setAirline} alliance={alliance} />
-          </div>
-        </div>
-
         <div className="mt-5 flex justify-end">
           <button
             type="submit"
@@ -380,12 +319,52 @@ export function SearchExperience() {
 
         {response && !loading && (
           <>
+            {/* Refine bar — class + alliance + airline (re-runs the search) */}
+            <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-white/5 bg-ink-800/50 p-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="flex flex-wrap gap-1.5">
+                {CABINS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCabin(c)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                      cabin === c
+                        ? "bg-white text-ink-900"
+                        : "bg-white/5 text-slate-300 hover:bg-white/10"
+                    }`}
+                  >
+                    {CABIN_LABELS[c]}
+                  </button>
+                ))}
+              </div>
+              <div className="hidden h-5 w-px bg-white/10 sm:block" />
+              <div className="flex flex-wrap gap-1.5">
+                {ALLIANCES.map((a) => (
+                  <button
+                    key={a.key}
+                    type="button"
+                    onClick={() => changeAlliance(a.key)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                      alliance === a.key
+                        ? "bg-brand-500 text-white"
+                        : "bg-white/5 text-slate-300 hover:bg-white/10"
+                    }`}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+              <div className="sm:ml-auto sm:w-56">
+                <AirlineInput value={airline} onChange={setAirline} alliance={alliance} />
+              </div>
+            </div>
+
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-slate-400">
                 <span className="font-semibold text-white">
                   {response.deals.length}
                 </span>{" "}
-                flights · {origins.join("/")} → {anywhere ? "Anywhere" : destinations.join("/")}
+                flights · {origins.join("/")} → {destinations.length ? destinations.join("/") : "Anywhere"}
                 {response.provider === "mock" && (
                   <span className="ml-2 rounded bg-amber-400/10 px-2 py-0.5 text-[11px] font-medium text-amber-400">
                     sample data
@@ -488,7 +467,7 @@ export function SearchExperience() {
             {showAlert && isPro && (
               <AlertForm
                 origin={origins[0] ?? ""}
-                destination={anywhere ? "" : destinations[0] ?? ""}
+                destination={destinations[0] ?? ""}
                 cabin={cabin}
                 departDate={departDate}
                 returnDate={tripType === "roundtrip" ? returnDate : undefined}
