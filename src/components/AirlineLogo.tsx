@@ -29,7 +29,7 @@ export function AirlineLogo({
 
   return (
     <span
-      className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded bg-white"
+      className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded bg-transparent"
       style={{ width: size, height: size }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
