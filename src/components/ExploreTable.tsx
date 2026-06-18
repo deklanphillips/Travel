@@ -6,6 +6,7 @@ import { REGIONS } from "@/data/programs";
 import { formatMiles } from "@/lib/format";
 
 interface Row {
+  id: string;
   date: string;
   lastSeen: string;
   origin: string;
@@ -125,9 +126,16 @@ export function ExploreTable({ source }: { source: string }) {
                     return (
                       <td key={c.label} className="px-4 py-3">
                         {v ? (
-                          <span className="rounded bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+                          <a
+                            href={`/api/award/book?id=${encodeURIComponent(r.id)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Book this on the program's site"
+                            className="inline-flex items-center gap-1 rounded bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/30 hover:text-emerald-200"
+                          >
                             {formatMiles(v)} pts
-                          </span>
+                            <span aria-hidden className="text-[9px]">↗</span>
+                          </a>
                         ) : (
                           <span className="text-xs text-slate-600">—</span>
                         )}

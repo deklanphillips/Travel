@@ -3,7 +3,8 @@ import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { ExploreTable } from "@/components/ExploreTable";
 import { programBySource } from "@/data/programs";
-import { CARD_STYLE, cardsForProgram } from "@/data/transferPartners";
+import { cardsForProgram } from "@/data/transferPartners";
+import { CardBadge } from "@/components/CardBadge";
 
 export default async function ProgramExplorePage({
   params,
@@ -35,12 +36,7 @@ export default async function ProgramExplorePage({
               Transfer from
             </span>
             {cards.map((c) => (
-              <span
-                key={c}
-                className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${CARD_STYLE[c]}`}
-              >
-                {c}
-              </span>
+              <CardBadge key={c} card={c} />
             ))}
           </div>
         )}

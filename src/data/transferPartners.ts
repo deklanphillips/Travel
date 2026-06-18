@@ -42,13 +42,13 @@ export const PROGRAM_CARDS: Record<string, CardName[]> = {
 
 // Badge colours roughly matching each issuer's brand.
 export const CARD_STYLE: Record<CardName, string> = {
-  Amex: "bg-[#1174cf] text-white",
+  Amex: "bg-[#1f7ae0] text-white",
   Chase: "bg-[#5b6770] text-white",
-  "Cap One": "bg-[#15b3b9] text-white",
-  Citi: "bg-[#1d8a4c] text-white",
-  Bilt: "bg-black text-white ring-1 ring-white/20",
+  "Cap One": "bg-[#13b4c4] text-white",
+  Citi: "bg-[#1ea24f] text-white",
+  Bilt: "bg-black text-white ring-1 ring-white/25",
   "Wells Fargo": "bg-[#d71e28] text-white",
-  Rove: "bg-white/10 text-slate-200 ring-1 ring-white/20",
+  Rove: "bg-white/10 text-slate-100 ring-1 ring-white/25",
 };
 
 export const ALL_CARDS: CardName[] = [

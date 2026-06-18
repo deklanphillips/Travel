@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { PROGRAMS } from "@/data/programs";
-import { CARD_STYLE, cardsForProgram } from "@/data/transferPartners";
+import { cardsForProgram } from "@/data/transferPartners";
+import { CardBadge } from "@/components/CardBadge";
 
 export const metadata = { title: "Explore award programs — Pointfare" };
 
@@ -32,14 +33,7 @@ export default function ExplorePage() {
                   {cards.length === 0 ? (
                     <span className="text-xs text-slate-600">No transfer partners</span>
                   ) : (
-                    cards.map((c) => (
-                      <span
-                        key={c}
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${CARD_STYLE[c]}`}
-                      >
-                        {c}
-                      </span>
-                    ))
+                    cards.map((c) => <CardBadge key={c} card={c} />)
                   )}
                 </span>
                 <span className="ml-auto text-sm text-brand-300">Explore →</span>

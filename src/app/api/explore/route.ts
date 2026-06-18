@@ -6,6 +6,7 @@ import { programBySource } from "@/data/programs";
 // seats.aero and returns per-cabin lowest miles per route/date.
 
 interface RawRow {
+  ID: string;
   Date: string;
   UpdatedAt: string;
   Route: { OriginAirport: string; DestinationAirport: string };
@@ -64,6 +65,7 @@ export async function GET(req: NextRequest) {
         cabins[c.label] = available && miles > 0 ? miles : null;
       }
       return {
+        id: r.ID,
         date: r.Date,
         lastSeen: r.UpdatedAt,
         origin: r.Route.OriginAirport,

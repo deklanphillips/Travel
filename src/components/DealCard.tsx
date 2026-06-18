@@ -1,6 +1,7 @@
 import type { Deal } from "@/lib/types";
 import { AwardFlights } from "./AwardFlights";
-import { CARD_STYLE, cardsForProgram } from "@/data/transferPartners";
+import { CardBadge } from "./CardBadge";
+import { cardsForProgram } from "@/data/transferPartners";
 import {
   CABIN_LABELS,
   dealValueScore,
@@ -148,12 +149,7 @@ export function DealCard({
                 Transfer from
               </span>
               {transferCards.map((c) => (
-                <span
-                  key={c}
-                  className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${CARD_STYLE[c]}`}
-                >
-                  {c}
-                </span>
+                <CardBadge key={c} card={c} />
               ))}
             </div>
           )}
