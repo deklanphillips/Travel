@@ -38,7 +38,8 @@ export async function GET(req: NextRequest) {
   }
 
   const today = new Date();
-  const end = new Date(today.getTime() + 60 * 86_400_000);
+  const days = Math.min(Math.max(Number(sp.get("days") ?? "60") || 60, 7), 120);
+  const end = new Date(today.getTime() + days * 86_400_000);
   const qs = new URLSearchParams({
     source,
     start_date: today.toISOString().slice(0, 10),
