@@ -38,7 +38,16 @@ const ago = (iso: string) => {
   return `${Math.round(mins / 1440)}d ago`;
 };
 
-export function ExploreTable({ source }: { source: string }) {
+export function ExploreTable({
+  source,
+  originAirport,
+  destAirport,
+}: {
+  source: string;
+  originAirport?: string;
+  destAirport?: string;
+}) {
+  const airportMode = Boolean(originAirport || destAirport);
   const [originRegion, setOriginRegion] = useState("North America");
   const [destRegion, setDestRegion] = useState("");
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -49,8 +58,14 @@ export function ExploreTable({ source }: { source: string }) {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    const qs = new URLSearchParams({ source, originRegion });
-    if (destRegion) qs.set("destRegion", destRegion);
+    const qs = new URLSearchParams({ source });
+    if (airportMode) {
+      if (originAirport) qs.set("originAirport", originAirport);
+      if (destAirport) qs.set("destAirport", destAirport);
+    } else {
+      qs.set("originRegion", originRegion);
+      if (destRegion) qs.set("destRegion", destRegion);
+    }
     fetch(`/api/explore?${qs.toString()}`)
       .then(async (res) => {
         const json = await res.json();
@@ -62,33 +77,35 @@ export function ExploreTable({ source }: { source: string }) {
     return () => {
       cancelled = true;
     };
-  }, [source, originRegion, destRegion]);
+  }, [source, originRegion, destRegion, originAirport, destAirport, airportMode]);
 
   return (
     <div className="mt-6">
-      <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-slate-400">Show flights from</span>
-        <select
-          value={originRegion}
-          onChange={(e) => setOriginRegion(e.target.value)}
-          className="rounded-lg border border-white/10 bg-ink-800 px-3 py-1.5 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-        >
-          {REGIONS.map((r) => (
-            <option key={r} value={r}>{r}</option>
-          ))}
-        </select>
-        <span className="text-slate-400">to</span>
-        <select
-          value={destRegion}
-          onChange={(e) => setDestRegion(e.target.value)}
-          className="rounded-lg border border-white/10 bg-ink-800 px-3 py-1.5 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-        >
-          <option value="">Anywhere</option>
-          {REGIONS.map((r) => (
-            <option key={r} value={r}>{r}</option>
-          ))}
-        </select>
-      </div>
+      {!airportMode && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-slate-400">Show flights from</span>
+          <select
+            value={originRegion}
+            onChange={(e) => setOriginRegion(e.target.value)}
+            className="rounded-lg border border-white/10 bg-ink-800 px-3 py-1.5 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+          >
+            {REGIONS.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+          <span className="text-slate-400">to</span>
+          <select
+            value={destRegion}
+            onChange={(e) => setDestRegion(e.target.value)}
+            className="rounded-lg border border-white/10 bg-ink-800 px-3 py-1.5 text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+          >
+            <option value="">Anywhere</option>
+            {REGIONS.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {loading && <p className="text-sm text-slate-500">Loading award space…</p>}
       {error && <p className="text-sm text-rose-400">{error}</p>}
@@ -119,8 +136,22 @@ export function ExploreTable({ source }: { source: string }) {
                   <td className="whitespace-nowrap px-4 py-3 text-slate-500">
                     {ago(r.lastSeen)}
                   </td>
-                  <td className="px-4 py-3 font-medium">{r.origin}</td>
-                  <td className="px-4 py-3 font-medium">{r.destination}</td>
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/explore/${source}/departing/${r.origin}`}
+                      className="font-medium text-brand-300 hover:text-brand-200 hover:underline"
+                    >
+                      {r.origin}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/explore/${source}/arriving/${r.destination}`}
+                      className="font-medium text-brand-300 hover:text-brand-200 hover:underline"
+                    >
+                      {r.destination}
+                    </Link>
+                  </td>
                   {CABIN_COLS.map((c) => {
                     const v = r[c.key] as number | null;
                     return (
