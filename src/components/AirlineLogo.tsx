@@ -2,8 +2,17 @@
 
 import { useState } from "react";
 
-// Renders an airline's logo by IATA code (free Kiwi.com logo CDN), on a light
-// chip so it's visible on dark UI. Falls back to a colored monogram if missing.
+// Renders an airline logo by IATA code on a transparent background so it
+// meshes with the dark UI. Tries transparent CDNs in order, then falls back
+// to a colored monogram.
+function sourcesFor(code: string): string[] {
+  if (!code) return [];
+  return [
+    `https://pics.avs.io/120/120/${code}.png`, // Aviasales — transparent
+    `https://images.kiwi.com/airlines/64/${code}.png`, // Kiwi — fallback
+  ];
+}
+
 export function AirlineLogo({
   code,
   name,
@@ -13,10 +22,11 @@ export function AirlineLogo({
   name?: string;
   size?: number;
 }) {
-  const [failed, setFailed] = useState(false);
   const c = (code || "").toUpperCase();
+  const sources = sourcesFor(c);
+  const [idx, setIdx] = useState(0);
 
-  if (failed || !c) {
+  if (sources.length === 0 || idx >= sources.length) {
     return (
       <span
         className="inline-flex shrink-0 items-center justify-center rounded bg-gradient-to-br from-brand-500 to-purple-500 text-[10px] font-bold text-white"
@@ -29,18 +39,16 @@ export function AirlineLogo({
 
   return (
     <span
-      className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded bg-transparent"
+      className="inline-flex shrink-0 items-center justify-center bg-transparent"
       style={{ width: size, height: size }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`https://images.kiwi.com/airlines/64/${c}.png`}
+        src={sources[idx]}
         alt={name || c}
-        width={size}
-        height={size}
         loading="lazy"
-        onError={() => setFailed(true)}
-        className="h-full w-full object-contain"
+        onError={() => setIdx((i) => i + 1)}
+        className="max-h-full max-w-full object-contain"
       />
     </span>
   );
