@@ -14,6 +14,9 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden items-center gap-8 text-sm text-slate-300 md:flex">
+          <Link href="/explore" className="transition hover:text-white">
+            Explore
+          </Link>
           <a href="#how" className="transition hover:text-white">
             How it works
           </a>
