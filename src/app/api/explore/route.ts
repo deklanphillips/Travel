@@ -40,8 +40,8 @@ export async function GET(req: NextRequest) {
     origin_region: originRegion,
     start_date: today.toISOString().slice(0, 10),
     end_date: end.toISOString().slice(0, 10),
-    take: "200",
-    order_by: "lowest_mileage",
+    // Pull a broad sample, then keep only recently-seen (active) space below.
+    take: "1000",
   });
   if (destRegion) qs.set("destination_region", destRegion);
 
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     if (!res.ok) throw new Error(`availability ${res.status}`);
     const json = (await res.json()) as { data?: RawRow[] };
 
-    const rows = (json.data ?? []).map((r) => {
+    const mapped = (json.data ?? []).map((r) => {
       const rec = r as Record<string, unknown>;
       const cabins: Record<string, number | null> = {};
       for (const c of CABINS) {
@@ -74,7 +74,17 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ rows: rows.slice(0, 200) });
+    // Keep only award space confirmed in the last 2 weeks ("active"), so we
+    // don't show months-old phantom availability. Fall back to all if sparse.
+    const FRESH_MS = 14 * 86_400_000;
+    const now = Date.now();
+    const fresh = mapped.filter(
+      (r) => now - new Date(r.lastSeen).getTime() <= FRESH_MS,
+    );
+    const chosen = fresh.length >= 10 ? fresh : mapped;
+    chosen.sort((a, b) => a.date.localeCompare(b.date));
+
+    return NextResponse.json({ rows: chosen.slice(0, 200) });
   } catch (err) {
     console.error("[explore] failed", source, err);
     return NextResponse.json({ error: "Could not load award table." }, { status: 502 });
