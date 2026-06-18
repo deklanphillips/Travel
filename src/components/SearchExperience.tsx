@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { AirportInput } from "./AirportInput";
 import { AirlineInput } from "./AirlineInput";
 import { DealCard } from "./DealCard";
@@ -158,8 +159,28 @@ export function SearchExperience() {
       {/* Search card */}
       <form
         onSubmit={runSearch}
-        className="rounded-3xl border border-white/10 bg-ink-800/70 p-4 shadow-2xl shadow-black/40 backdrop-blur sm:p-6"
+        className="overflow-hidden rounded-3xl border border-white/10 bg-ink-800/70 shadow-2xl shadow-black/40 backdrop-blur"
       >
+        {/* Search / Explore tabs */}
+        <div className="flex border-b border-white/10 text-sm font-semibold">
+          <span className="flex flex-1 items-center justify-center gap-2 bg-brand-500 px-4 py-3.5 text-white">
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.329 3.328a.75.75 0 11-1.061 1.061l-3.328-3.329A7 7 0 012 9z" clipRule="evenodd" />
+            </svg>
+            Search
+          </span>
+          <Link
+            href="/explore"
+            className="flex flex-1 items-center justify-center gap-2 px-4 py-3.5 text-slate-300 transition hover:bg-white/5 hover:text-white"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-.943-.943l-3.5 1.167a.75.75 0 00-.474.474l-1.167 3.5a.75.75 0 00.943.943l3.5-1.167a.75.75 0 00.474-.474l1.167-3.5zM10 11a1 1 0 110-2 1 1 0 010 2z" clipRule="evenodd" />
+            </svg>
+            Explore
+          </Link>
+        </div>
+
+        <div className="p-4 sm:p-6">
         {/* Trip type / date mode / anywhere toggles */}
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <div className="flex rounded-full bg-white/5 p-1 text-xs font-medium">
@@ -330,19 +351,20 @@ export function SearchExperience() {
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/20 transition hover:opacity-95 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/20 transition hover:bg-brand-600 disabled:opacity-60"
           >
-            {loading ? "Searching…" : "Search deals"}
+            {loading ? "Searching…" : "Search"}
             {!loading && (
               <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"
-                  d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z"
+                  d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.329 3.328a.75.75 0 11-1.061 1.061l-3.328-3.329A7 7 0 012 9z"
                   clipRule="evenodd"
                 />
               </svg>
             )}
           </button>
+        </div>
         </div>
       </form>
 
