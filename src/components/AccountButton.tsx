@@ -20,15 +20,20 @@ export function AccountButton() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  if (loading) return <div className="h-9 w-24" />;
-
   return (
     <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-white/10"
+        className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
       >
+        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path
+            fillRule="evenodd"
+            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+            clipRule="evenodd"
+          />
+        </svg>
         {isPro && (
           <span className="rounded bg-brand-500 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
             Pro
@@ -61,7 +66,9 @@ export function AccountButton() {
           </div>
 
           <div className="border-t border-white/5 pt-2">
-            {isPro ? (
+            {loading ? (
+              <div className="px-2 py-1.5 text-sm text-slate-500">Loading…</div>
+            ) : isPro ? (
               <>
                 <div className="flex items-center justify-between px-2 py-1 text-sm text-slate-300">
                   <span>Plan</span>
