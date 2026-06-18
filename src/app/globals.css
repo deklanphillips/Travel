@@ -40,6 +40,10 @@ body {
 [data-theme="light"] .text-slate-400 {
   color: #475569;
 }
+/* "Dark text on white" token — keep it dark in light mode (it was remapped). */
+[data-theme="light"] .text-ink-900 {
+  color: #0f172a;
+}
 [data-theme="light"] .bg-white\/5 {
   background-color: rgba(15, 23, 42, 0.04);
 }

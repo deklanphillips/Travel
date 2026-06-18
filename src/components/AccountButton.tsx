@@ -54,9 +54,10 @@ export function AccountButton() {
                 key={t}
                 type="button"
                 onClick={() => setTheme(t)}
+                style={theme === t ? { color: "#fff" } : undefined}
                 className={`flex-1 rounded-md px-2 py-1 text-xs font-medium capitalize transition ${
                   theme === t
-                    ? "bg-white text-ink-900"
+                    ? "bg-brand-500"
                     : "text-slate-300 hover:text-white"
                 }`}
               >
