@@ -5,6 +5,7 @@ import Link from "next/link";
 import { REGIONS } from "@/data/programs";
 import { formatMiles } from "@/lib/format";
 import { useEntitlement } from "@/lib/entitlement";
+import { DaysSelect } from "./DaysSelect";
 
 interface CabinInfo {
   miles: number;
@@ -184,10 +185,7 @@ export function ExploreTable({
       )}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <select value={days} onChange={(e) => onDaysChange(Number(e.target.value))} className={pill}>
-          {[30, 60, 90].map((d) => <option key={d} value={d}>{d} days</option>)}
-          <option value={365}>{isPro ? "365 days" : "365 days 🔒 Pro"}</option>
-        </select>
+        <DaysSelect value={days} onSelect={onDaysChange} />
         <input value={departs} onChange={(e) => setDeparts(e.target.value.toUpperCase().slice(0, 3))}
           placeholder="Departs" className={`${pill} w-24 uppercase placeholder:normal-case placeholder:text-slate-500`} />
         <input value={arrives} onChange={(e) => setArrives(e.target.value.toUpperCase().slice(0, 3))}
