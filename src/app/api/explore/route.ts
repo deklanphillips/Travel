@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
   }
 
   const today = new Date();
-  const days = Math.min(Math.max(Number(sp.get("days") ?? "60") || 60, 7), 120);
+  const days = Math.min(Math.max(Number(sp.get("days") ?? "90") || 90, 7), 365);
   const end = new Date(today.getTime() + days * 86_400_000);
   const qs = new URLSearchParams({
     source,
@@ -69,11 +69,32 @@ export async function GET(req: NextRequest) {
 
     const mapped = (json.data ?? []).map((r) => {
       const rec = r as Record<string, unknown>;
-      const cabins: Record<string, number | null> = {};
+      const cabins: Record<string, {
+        miles: number;
+        seats: number;
+        direct: boolean;
+        airlines: string;
+      } | null> = {};
+      const airlineSet = new Set<string>();
       for (const c of CABINS) {
         const available = Boolean(rec[`${c.key}Available`]);
         const miles = Number(rec[`${c.key}MileageCost`] ?? 0);
-        cabins[c.label] = available && miles > 0 ? miles : null;
+        if (available && miles > 0) {
+          const airlines = String(rec[`${c.key}Airlines`] ?? "");
+          cabins[c.label] = {
+            miles,
+            seats: Number(rec[`${c.key}RemainingSeats`] ?? 0) || 0,
+            direct: Boolean(rec[`${c.key}Direct`]),
+            airlines,
+          };
+          airlines
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .forEach((a) => airlineSet.add(a));
+        } else {
+          cabins[c.label] = null;
+        }
       }
       return {
         id: r.ID,
@@ -81,7 +102,8 @@ export async function GET(req: NextRequest) {
         lastSeen: r.UpdatedAt,
         origin: r.Route.OriginAirport,
         destination: r.Route.DestinationAirport,
-        ...cabins,
+        cabins,
+        airlines: [...airlineSet],
       };
     });
 

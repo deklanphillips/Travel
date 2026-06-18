@@ -4,6 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { REGIONS } from "@/data/programs";
 import { formatMiles } from "@/lib/format";
+import { useEntitlement } from "@/lib/entitlement";
+
+interface CabinInfo {
+  miles: number;
+  seats: number;
+  direct: boolean;
+  airlines: string;
+}
+type CabinKey = "economy" | "premium" | "business" | "first";
+type SortKey = "date" | "lastSeen" | CabinKey;
 
 interface Row {
   id: string;
@@ -11,14 +21,9 @@ interface Row {
   lastSeen: string;
   origin: string;
   destination: string;
-  economy: number | null;
-  premium: number | null;
-  business: number | null;
-  first: number | null;
+  cabins: Record<CabinKey, CabinInfo | null>;
+  airlines: string[];
 }
-
-type CabinKey = "economy" | "premium" | "business" | "first";
-type SortKey = "date" | "lastSeen" | CabinKey;
 
 const CABIN_COLS: { key: CabinKey; label: string }[] = [
   { key: "economy", label: "Economy" },
@@ -51,18 +56,22 @@ export function ExploreTable({
   destAirport?: string;
 }) {
   const airportMode = Boolean(originAirport || destAirport);
+  const { isPro, startCheckout } = useEntitlement();
+
   const [originRegion, setOriginRegion] = useState("North America");
   const [destRegion, setDestRegion] = useState("");
-  const [days, setDays] = useState(60);
+  const [days, setDays] = useState(90);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters + sort (client-side over the fetched rows).
   const [cabin, setCabin] = useState<"" | CabinKey>("");
   const [departs, setDeparts] = useState("");
   const [arrives, setArrives] = useState("");
   const [maxPoints, setMaxPoints] = useState("");
+  const [airline, setAirline] = useState("");
+  const [stops, setStops] = useState<"" | "nonstop">("");
+  const [minSeats, setMinSeats] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("lastSeen");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -91,56 +100,72 @@ export function ExploreTable({
     };
   }, [source, originRegion, destRegion, days, originAirport, destAirport, airportMode]);
 
+  function onDaysChange(val: number) {
+    if (val === 365 && !isPro) {
+      startCheckout(); // upgrade to unlock a full year
+      return;
+    }
+    setDays(val);
+  }
+
   function toggleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
       setSortKey(key);
-      setSortDir(key === "lastSeen" ? "desc" : "asc"); // cheapest/earliest first
+      setSortDir(key === "lastSeen" ? "desc" : "asc");
     }
   }
+
+  // Airlines present in the loaded data (for the Airlines dropdown).
+  const allAirlines = useMemo(() => {
+    const s = new Set<string>();
+    (rows ?? []).forEach((r) => r.airlines.forEach((a) => s.add(a)));
+    return [...s].sort();
+  }, [rows]);
 
   const view = useMemo(() => {
     if (!rows) return [];
     const max = Number(maxPoints) || 0;
+    const seatsMin = Number(minSeats) || 0;
+    const cabinsOf = (r: Row): CabinInfo[] =>
+      cabin ? [r.cabins[cabin]].filter((c): c is CabinInfo => !!c)
+            : (Object.values(r.cabins).filter((c): c is CabinInfo => !!c));
+
     let v = rows.filter((r) => {
-      if (cabin && r[cabin] == null) return false;
+      if (cabin && !r.cabins[cabin]) return false;
       if (departs && !r.origin.startsWith(departs.toUpperCase())) return false;
       if (arrives && !r.destination.startsWith(arrives.toUpperCase())) return false;
-      if (max > 0) {
-        const vals = (cabin ? [r[cabin]] : [r.economy, r.premium, r.business, r.first])
-          .filter((x): x is number => x != null);
-        const min = vals.length ? Math.min(...vals) : Infinity;
-        if (min > max) return false;
-      }
+      const cs = cabinsOf(r);
+      if (cs.length === 0) return false;
+      if (airline && !cs.some((c) => c.airlines.includes(airline))) return false;
+      if (stops === "nonstop" && !cs.some((c) => c.direct)) return false;
+      if (max > 0 && Math.min(...cs.map((c) => c.miles)) > max) return false;
+      if (seatsMin > 0 && Math.max(...cs.map((c) => c.seats)) < seatsMin) return false;
       return true;
     });
+
     v = [...v].sort((a, b) => {
-      if (sortKey === "date") {
-        return sortDir === "asc"
-          ? a.date.localeCompare(b.date)
-          : b.date.localeCompare(a.date);
-      }
+      if (sortKey === "date")
+        return sortDir === "asc" ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date);
       if (sortKey === "lastSeen") {
         const av = new Date(a.lastSeen).getTime();
         const bv = new Date(b.lastSeen).getTime();
         return sortDir === "asc" ? av - bv : bv - av;
       }
-      const av = a[sortKey];
-      const bv = b[sortKey];
+      const av = a.cabins[sortKey]?.miles ?? null;
+      const bv = b.cabins[sortKey]?.miles ?? null;
       if (av == null && bv == null) return 0;
-      if (av == null) return 1; // unavailable always last
+      if (av == null) return 1;
       if (bv == null) return -1;
       return sortDir === "asc" ? av - bv : bv - av;
     });
     return v;
-  }, [rows, cabin, departs, arrives, maxPoints, sortKey, sortDir]);
+  }, [rows, cabin, departs, arrives, maxPoints, airline, stops, minSeats, sortKey, sortDir]);
 
-  const arrow = (key: SortKey) =>
-    sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
-
+  const arrow = (key: SortKey) => (sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "");
   const pill =
     "rounded-full border border-white/10 bg-ink-800 px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500";
+  const hasFilters = departs || arrives || cabin || maxPoints || airline || stops || minSeats;
 
   return (
     <div className="mt-6">
@@ -158,36 +183,34 @@ export function ExploreTable({
         </div>
       )}
 
-      {/* Filter bar */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <select value={days} onChange={(e) => setDays(Number(e.target.value))} className={pill}>
-          {[30, 60, 90, 120].map((d) => <option key={d} value={d}>{d} days</option>)}
+        <select value={days} onChange={(e) => onDaysChange(Number(e.target.value))} className={pill}>
+          {[30, 60, 90].map((d) => <option key={d} value={d}>{d} days</option>)}
+          <option value={365}>{isPro ? "365 days" : "365 days 🔒 Pro"}</option>
         </select>
-        <input
-          value={departs}
-          onChange={(e) => setDeparts(e.target.value.toUpperCase().slice(0, 3))}
-          placeholder="Departs"
-          className={`${pill} w-24 uppercase placeholder:normal-case placeholder:text-slate-500`}
-        />
-        <input
-          value={arrives}
-          onChange={(e) => setArrives(e.target.value.toUpperCase().slice(0, 3))}
-          placeholder="Arrives"
-          className={`${pill} w-24 uppercase placeholder:normal-case placeholder:text-slate-500`}
-        />
+        <input value={departs} onChange={(e) => setDeparts(e.target.value.toUpperCase().slice(0, 3))}
+          placeholder="Departs" className={`${pill} w-24 uppercase placeholder:normal-case placeholder:text-slate-500`} />
+        <input value={arrives} onChange={(e) => setArrives(e.target.value.toUpperCase().slice(0, 3))}
+          placeholder="Arrives" className={`${pill} w-24 uppercase placeholder:normal-case placeholder:text-slate-500`} />
         <select value={cabin} onChange={(e) => setCabin(e.target.value as "" | CabinKey)} className={pill}>
           <option value="">All cabins</option>
           {CABIN_COLS.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
         </select>
-        <input
-          value={maxPoints}
-          onChange={(e) => setMaxPoints(e.target.value.replace(/\D/g, ""))}
-          placeholder="Max points"
-          className={`${pill} w-28 placeholder:text-slate-500`}
-        />
-        {(departs || arrives || cabin || maxPoints) && (
+        <select value={airline} onChange={(e) => setAirline(e.target.value)} className={pill}>
+          <option value="">All airlines</option>
+          {allAirlines.map((a) => <option key={a} value={a}>{a}</option>)}
+        </select>
+        <select value={stops} onChange={(e) => setStops(e.target.value as "" | "nonstop")} className={pill}>
+          <option value="">Direct + stops</option>
+          <option value="nonstop">Nonstop only</option>
+        </select>
+        <input value={minSeats} onChange={(e) => setMinSeats(e.target.value.replace(/\D/g, ""))}
+          placeholder="Min seats" className={`${pill} w-24 placeholder:text-slate-500`} />
+        <input value={maxPoints} onChange={(e) => setMaxPoints(e.target.value.replace(/\D/g, ""))}
+          placeholder="Max points" className={`${pill} w-28 placeholder:text-slate-500`} />
+        {hasFilters && (
           <button
-            onClick={() => { setDeparts(""); setArrives(""); setCabin(""); setMaxPoints(""); }}
+            onClick={() => { setDeparts(""); setArrives(""); setCabin(""); setMaxPoints(""); setAirline(""); setStops(""); setMinSeats(""); }}
             className="text-xs text-slate-400 hover:text-white"
           >
             Clear
@@ -203,26 +226,16 @@ export function ExploreTable({
 
       {view.length > 0 && (
         <div className="overflow-x-auto rounded-2xl border border-white/10">
-          <table className="w-full min-w-[680px] text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead className="bg-white/5 text-left text-xs uppercase tracking-wide text-slate-400">
               <tr>
-                <th className="px-4 py-3">
-                  <button onClick={() => toggleSort("date")} className="hover:text-white">
-                    Date{arrow("date")}
-                  </button>
-                </th>
-                <th className="px-4 py-3">
-                  <button onClick={() => toggleSort("lastSeen")} className="hover:text-white">
-                    Last seen{arrow("lastSeen")}
-                  </button>
-                </th>
+                <th className="px-4 py-3"><button onClick={() => toggleSort("date")} className="hover:text-white">Date{arrow("date")}</button></th>
+                <th className="px-4 py-3"><button onClick={() => toggleSort("lastSeen")} className="hover:text-white">Last seen{arrow("lastSeen")}</button></th>
                 <th className="px-4 py-3">Departs</th>
                 <th className="px-4 py-3">Arrives</th>
                 {CABIN_COLS.map((c) => (
                   <th key={c.label} className="px-4 py-3">
-                    <button onClick={() => toggleSort(c.key)} className="hover:text-white">
-                      {c.label}{arrow(c.key)}
-                    </button>
+                    <button onClick={() => toggleSort(c.key)} className="hover:text-white">{c.label}{arrow(c.key)}</button>
                   </th>
                 ))}
               </tr>
@@ -232,31 +245,24 @@ export function ExploreTable({
                 <tr key={`${r.id}-${i}`} className="text-slate-200 transition hover:bg-white/5">
                   <td className="whitespace-nowrap px-4 py-3">{fmtDate(r.date)}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-slate-500">{ago(r.lastSeen)}</td>
-                  <td className="px-4 py-3">
-                    <Link href={`/explore/${source}/departing/${r.origin}`} className="font-medium text-brand-300 hover:text-brand-200 hover:underline">
-                      {r.origin}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link href={`/explore/${source}/arriving/${r.destination}`} className="font-medium text-brand-300 hover:text-brand-200 hover:underline">
-                      {r.destination}
-                    </Link>
-                  </td>
+                  <td className="px-4 py-3"><Link href={`/explore/${source}/departing/${r.origin}`} className="font-medium text-brand-300 hover:underline">{r.origin}</Link></td>
+                  <td className="px-4 py-3"><Link href={`/explore/${source}/arriving/${r.destination}`} className="font-medium text-brand-300 hover:underline">{r.destination}</Link></td>
                   {CABIN_COLS.map((c) => {
-                    const v = r[c.key];
+                    const ci = r.cabins[c.key];
                     return (
-                      <td key={c.label} className="px-4 py-3">
-                        {v ? (
-                          <a
-                            href={`/api/award/book?id=${encodeURIComponent(r.id)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Book this on the program's site"
-                            className="inline-flex items-center gap-1 rounded bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/30 hover:text-emerald-200"
-                          >
-                            {formatMiles(v)} pts
-                            <span aria-hidden className="text-[9px]">↗</span>
-                          </a>
+                      <td key={c.label} className="px-4 py-3 align-top">
+                        {ci ? (
+                          <>
+                            <a href={`/api/award/book?id=${encodeURIComponent(r.id)}`} target="_blank" rel="noopener noreferrer"
+                              title="Book on the program's site"
+                              className="inline-flex items-center gap-1 rounded bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/30">
+                              {formatMiles(ci.miles)} pts<span aria-hidden className="text-[9px]">↗</span>
+                            </a>
+                            <div className="mt-0.5 text-[10px] text-slate-500">
+                              {ci.seats > 0 ? `${ci.seats} seat${ci.seats > 1 ? "s" : ""} · ` : ""}
+                              {ci.direct ? "nonstop" : "1+ stop"}
+                            </div>
+                          </>
                         ) : (
                           <span className="text-xs text-slate-600">—</span>
                         )}
@@ -272,9 +278,7 @@ export function ExploreTable({
 
       <p className="mt-3 text-xs text-slate-500">
         Showing {view.length} result{view.length === 1 ? "" : "s"}. Want cash prices for a date?{" "}
-        <Link href="/" className="text-brand-300 hover:text-brand-200">
-          Search it on the home page
-        </Link>{" "}
+        <Link href="/" className="text-brand-300 hover:text-brand-200">Search it on the home page</Link>{" "}
         for cash and miles side by side.
       </p>
     </div>
