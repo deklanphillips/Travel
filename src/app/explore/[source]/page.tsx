@@ -5,6 +5,7 @@ import { ExploreTable } from "@/components/ExploreTable";
 import { programBySource } from "@/data/programs";
 import { cardsForProgram } from "@/data/transferPartners";
 import { CardBadge } from "@/components/CardBadge";
+import { AirlineLogo } from "@/components/AirlineLogo";
 
 export default async function ProgramExplorePage({
   params,
@@ -24,7 +25,8 @@ export default async function ProgramExplorePage({
         <Link href="/explore" className="text-sm text-brand-300 hover:text-brand-200">
           ← All programs
         </Link>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-white">
+        <h1 className="mt-3 flex items-center gap-3 text-3xl font-bold tracking-tight text-white">
+          <AirlineLogo code={program.code} name={program.name} size={32} />
           Explore {program.name}
         </h1>
         <p className="mt-2 text-slate-400">

@@ -3,6 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { PROGRAMS } from "@/data/programs";
 import { cardsForProgram } from "@/data/transferPartners";
 import { CardBadge } from "@/components/CardBadge";
+import { AirlineLogo } from "@/components/AirlineLogo";
 
 export const metadata = { title: "Explore award programs — Pointfare" };
 
@@ -28,7 +29,10 @@ export default function ExplorePage() {
                 href={`/explore/${p.source}`}
                 className="flex flex-wrap items-center gap-3 px-4 py-3 transition hover:bg-white/5"
               >
-                <span className="min-w-[220px] font-medium text-white">{p.name}</span>
+                <span className="flex min-w-[220px] items-center gap-2 font-medium text-white">
+                  <AirlineLogo code={p.code} name={p.name} />
+                  {p.name}
+                </span>
                 <span className="flex flex-wrap gap-1">
                   {cards.length === 0 ? (
                     <span className="text-xs text-slate-600">No transfer partners</span>

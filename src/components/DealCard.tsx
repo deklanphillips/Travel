@@ -1,5 +1,6 @@
 import type { Deal } from "@/lib/types";
 import { AwardFlights } from "./AwardFlights";
+import { AirlineLogo } from "./AirlineLogo";
 import { CardBadge } from "./CardBadge";
 import { cardsForProgram } from "@/data/transferPartners";
 import {
@@ -11,14 +12,6 @@ import {
   formatUSD,
   type DealFlag,
 } from "@/lib/format";
-
-function ProgramBadge({ code }: { code: string }) {
-  return (
-    <span className="inline-flex h-6 min-w-6 items-center justify-center rounded bg-gradient-to-br from-brand-500/30 to-purple-500/30 px-1.5 text-[11px] font-bold text-brand-200 ring-1 ring-inset ring-white/10">
-      {code}
-    </span>
-  );
-}
 
 // A Pro-gated badge marking a fare as a deal. Free users see a locked teaser;
 // Pro users see how far below the typical price it is.
@@ -111,7 +104,7 @@ export function DealCard({
         {/* Itinerary */}
         <div className="flex-1">
           <div className="mb-1 flex flex-wrap items-center gap-2">
-            <ProgramBadge code={headlineCode} />
+            <AirlineLogo code={headlineCode} name={headlineName} />
             <span className="text-sm font-medium text-slate-200">
               {headlineName}
             </span>
