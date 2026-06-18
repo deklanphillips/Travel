@@ -25,9 +25,19 @@ const VALID_CABINS: CabinClass[] = [
 
 const VALID_ALLIANCES: AllianceFilter[] = ["any", "star", "oneworld", "skyteam"];
 
-function parseParams(searchParams: URLSearchParams): SearchParams | { error: string } {
-  const origin = (searchParams.get("origin") ?? "").toUpperCase().trim();
-  const destination = (searchParams.get("destination") ?? "").toUpperCase().trim();
+type ParsedParams = SearchParams & { origins: string[]; destinations: string[] };
+
+function parseParams(searchParams: URLSearchParams): ParsedParams | { error: string } {
+  const splitCodes = (raw: string) =>
+    raw
+      .toUpperCase()
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 3); // cap to keep the number of provider calls sane
+
+  const origins = splitCodes(searchParams.get("origin") ?? "");
+  const destinations = splitCodes(searchParams.get("destination") ?? "");
   const departDate = searchParams.get("departDate") ?? "";
   const returnDate = searchParams.get("returnDate") ?? undefined;
   const passengers = Number(searchParams.get("passengers") ?? "1");
@@ -37,14 +47,13 @@ function parseParams(searchParams: URLSearchParams): SearchParams | { error: str
 
   // Dates may be an exact day (YYYY-MM-DD) or a whole month (YYYY-MM).
   const DATE_RE = /^\d{4}-\d{2}(-\d{2})?$/;
-  // Destination may be blank — that means "anywhere" from the origin.
-  const anywhere = destination === "" || destination === "ANY";
+  // No destinations = "anywhere" from the origin(s).
+  const anywhere = destinations.length === 0 || destinations.includes("ANY");
 
-  if (!/^[A-Z]{3}$/.test(origin)) return { error: "Invalid origin airport code." };
-  if (!anywhere && !/^[A-Z]{3}$/.test(destination))
+  if (origins.length === 0 || !origins.every((o) => /^[A-Z]{3}$/.test(o)))
+    return { error: "Invalid origin airport code." };
+  if (!anywhere && !destinations.every((d) => /^[A-Z]{3}$/.test(d)))
     return { error: "Invalid destination airport code." };
-  if (!anywhere && origin === destination)
-    return { error: "Origin and destination must differ." };
   if (!DATE_RE.test(departDate))
     return { error: "Invalid departure date." };
   if (returnDate && !DATE_RE.test(returnDate))
@@ -58,8 +67,10 @@ function parseParams(searchParams: URLSearchParams): SearchParams | { error: str
     return { error: "Unknown airline." };
 
   return {
-    origin,
-    destination: anywhere ? "" : destination,
+    origin: origins[0],
+    destination: anywhere ? "" : destinations[0],
+    origins,
+    destinations: anywhere ? [] : destinations,
     departDate,
     returnDate: returnDate || undefined,
     passengers,
@@ -79,11 +90,30 @@ export async function GET(request: Request) {
 
   const provider = getProvider();
 
+  // Build every origin × destination pair ("" destination = anywhere).
+  const dests = parsed.destinations.length ? parsed.destinations : [""];
+  const pairs: SearchParams[] = [];
+  for (const o of parsed.origins) {
+    for (const d of dests) {
+      if (o === d) continue;
+      pairs.push({ ...parsed, origin: o, destination: d });
+    }
+  }
+
+  const dedupe = (deals: Deal[]) => {
+    const seen = new Set<string>();
+    return deals.filter((x) => (seen.has(x.id) ? false : seen.add(x.id)));
+  };
+
   try {
-    const cashDeals = await provider.search(parsed);
+    const cashDeals = dedupe(
+      (await Promise.all(pairs.map((p) => provider.search(p).catch(() => [])))).flat(),
+    );
 
     // Merge in award (miles) availability if an award source is configured.
-    const awardDeals = await fetchAwardDeals(parsed);
+    const awardDeals = dedupe(
+      (await Promise.all(pairs.map((p) => fetchAwardDeals(p)))).flat(),
+    );
 
     // Attach the cheapest cash fare per destination to each award deal, so the
     // UI can show the cash-vs-points value (cents per mile).

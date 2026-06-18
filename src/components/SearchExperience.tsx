@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { AirportInput } from "./AirportInput";
+import { AirportMultiInput } from "./AirportMultiInput";
 import { AirlineInput } from "./AirlineInput";
 import { DealCard } from "./DealCard";
 import { AlertForm } from "./AlertForm";
@@ -47,8 +47,8 @@ function todayPlus(days: number): string {
 export function SearchExperience() {
   const { isPro, startCheckout } = useEntitlement();
   const locked = !isPro;
-  const [origin, setOrigin] = useState("JFK");
-  const [destination, setDestination] = useState("LHR");
+  const [origins, setOrigins] = useState<string[]>(["JFK"]);
+  const [destinations, setDestinations] = useState<string[]>(["LHR"]);
   const [anywhere, setAnywhere] = useState(false);
   const [tripType, setTripType] = useState<"oneway" | "roundtrip">("oneway");
   const [dateMode, setDateMode] = useState<"exact" | "month">("exact");
@@ -126,8 +126,8 @@ export function SearchExperience() {
     setResponse(null);
     try {
       const qs = new URLSearchParams({
-        origin,
-        destination: anywhere ? "" : destination,
+        origin: origins.join(","),
+        destination: anywhere ? "" : destinations.join(","),
         departDate,
         passengers: String(passengers),
         cabin,
@@ -223,7 +223,7 @@ export function SearchExperience() {
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <AirportInput label="From" value={origin} onChange={setOrigin} />
+          <AirportMultiInput label="From" values={origins} onChange={setOrigins} />
 
           {anywhere ? (
             <div>
@@ -235,7 +235,7 @@ export function SearchExperience() {
               </div>
             </div>
           ) : (
-            <AirportInput label="To" value={destination} onChange={setDestination} />
+            <AirportMultiInput label="To" values={destinations} onChange={setDestinations} />
           )}
 
           <div>
@@ -385,7 +385,7 @@ export function SearchExperience() {
                 <span className="font-semibold text-white">
                   {response.deals.length}
                 </span>{" "}
-                flights · {origin} → {destination}
+                flights · {origins.join("/")} → {anywhere ? "Anywhere" : destinations.join("/")}
                 {response.provider === "mock" && (
                   <span className="ml-2 rounded bg-amber-400/10 px-2 py-0.5 text-[11px] font-medium text-amber-400">
                     sample data
@@ -487,8 +487,8 @@ export function SearchExperience() {
 
             {showAlert && isPro && (
               <AlertForm
-                origin={origin}
-                destination={anywhere ? "" : destination}
+                origin={origins[0] ?? ""}
+                destination={anywhere ? "" : destinations[0] ?? ""}
                 cabin={cabin}
                 departDate={departDate}
                 returnDate={tripType === "roundtrip" ? returnDate : undefined}
