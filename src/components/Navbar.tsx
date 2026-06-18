@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
 import { AccountButton } from "./AccountButton";
+import { ExploreMenu } from "./ExploreMenu";
 
 export function Navbar() {
   return (
@@ -14,9 +15,7 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden items-center gap-8 text-sm text-slate-300 md:flex">
-          <Link href="/explore" className="transition hover:text-white">
-            Explore
-          </Link>
+          <ExploreMenu />
           <a href="#how" className="transition hover:text-white">
             How it works
           </a>
