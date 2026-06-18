@@ -203,6 +203,7 @@ function awardToDeal(a: AwardAvailability, params: SearchParams): Deal {
       programCode: a.programCode,
       miles: a.miles,
       fees: a.fees,
+      availabilityId: a.availabilityId,
     },
     cashBookingUrl: null,
     awardBookingUrl: award,

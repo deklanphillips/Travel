@@ -30,6 +30,7 @@ export interface AwardPricing {
   programCode: string; // short code, e.g. "BA"
   miles: number; // miles/points required
   fees: number; // cash co-pay (taxes & fees) in USD
+  availabilityId?: string; // seats.aero availability id (for flight details)
 }
 
 export interface Deal {

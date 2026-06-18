@@ -1,4 +1,5 @@
 import type { Deal } from "@/lib/types";
+import { AwardFlights } from "./AwardFlights";
 import {
   CABIN_LABELS,
   dealValueScore,
@@ -260,6 +261,14 @@ export function DealCard({
           />
         </div>
       </div>
+
+      {deal.award?.availabilityId && (
+        <AwardFlights
+          availabilityId={deal.award.availabilityId}
+          cabin={deal.cabin}
+          cashCompare={compareCash}
+        />
+      )}
     </article>
   );
 }
