@@ -16,7 +16,7 @@ function sourcesFor(code: string): string[] {
 export function AirlineLogo({
   code,
   name,
-  size = 22,
+  size = 30,
 }: {
   code: string;
   name?: string;
@@ -39,7 +39,7 @@ export function AirlineLogo({
 
   return (
     <span
-      className="inline-flex shrink-0 items-center justify-center bg-transparent"
+      className="inline-flex shrink-0 items-center justify-center rounded-md bg-white/10 p-0.5 ring-1 ring-white/10"
       style={{ width: size, height: size }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}

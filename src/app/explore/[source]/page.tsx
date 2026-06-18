@@ -26,7 +26,7 @@ export default async function ProgramExplorePage({
           ← All programs
         </Link>
         <h1 className="mt-3 flex items-center gap-3 text-3xl font-bold tracking-tight text-white">
-          <AirlineLogo code={program.code} name={program.name} size={32} />
+          <AirlineLogo code={program.code} name={program.name} size={40} />
           Explore {program.name}
         </h1>
         <p className="mt-2 text-slate-400">
